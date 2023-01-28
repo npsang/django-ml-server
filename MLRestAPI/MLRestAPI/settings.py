@@ -27,7 +27,7 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'app.apps.AppConfig',
     'corsheaders',
-    'ml',
+    'rest_framework',
 
 ]
 
@@ -43,7 +43,7 @@ MIDDLEWARE = [
     "django.middleware.common.CommonMiddleware",
 ]
 
-ROOT_URLCONF = 'MLRestApi.urls'
+ROOT_URLCONF = 'MLRestAPI.urls'
 
 TEMPLATES = [
     {
@@ -61,7 +61,7 @@ TEMPLATES = [
     },
 ]
 
-WSGI_APPLICATION = 'MLRestApi.wsgi.application'
+WSGI_APPLICATION = 'MLRestAPI.wsgi.application'
 
 
 # Database
@@ -123,3 +123,5 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 ALLOWED_HOSTS=['*']
 CORS_ORIGIN_ALLOW_ALL = True
+
+AUTH_USER_MODEL = 'app.User'
