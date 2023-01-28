@@ -15,7 +15,24 @@ class ItemBase(models.Model):
     updated_date = models.DateTimeField(auto_now=True)
     active = models.BooleanField(default=True)
 
-# Machine Learning here
+
+class Document(ItemBase):
+    document = models.FileField(upload_to='uploads/%Y/%M/%D/', null=True)
+    name = models.CharField(max_length=150, default="")
+    user = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, related_name='documents', default=None)
+    pre_processing = models.BooleanField(default=False)
+    content = models.TextField(default="")
+
+
+class Sentence(ItemBase):
+    document = models.ForeignKey(Document, on_delete=models.CASCADE, related_name='sentences')
+    content = models.CharField(max_length=1000)
+    is_tokenized = models.BooleanField(default=False)
+    content_tokenized = models.CharField(max_length=1000)
+    is_encode = models.BooleanField(default=False)
+    encode = models.BinaryField() #np.array
+
+
 class MLModel(ItemBase):
     name = models.CharField(max_length=128)
     description = models.CharField(max_length=1000)
