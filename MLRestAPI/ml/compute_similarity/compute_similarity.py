@@ -1,18 +1,34 @@
 from sentence_transformers import SentenceTransformer, util
 import numpy as np
 import os
+from underthesea import text_normalize, sent_tokenize, word_tokenize
 
 cwd = os.getcwd() # /home/sangnguyendesktop/Code/project/plagiarism
+
 
 class ComputeSimilarity:
     def __init__(self):
         path_to_artifacts = cwd+"/ml/compute_similarity/models/"
-        print(path_to_artifacts)
+
+        self.text_normalize = text_normalize
+        self.sent_tokenize = sent_tokenize
+        self.word_tokenize = word_tokenize
+
         self.model = SentenceTransformer(
             path_to_artifacts + 'make-multilingual-sys-2023-01-12_01-42-22')
 
     def preprocessing(self, input_data):
-        pass
+        """
+        1. Text Normalize
+        2. Sentence tokenize
+        3. Word tokenize
+        """
+        normalized = self.text_normalize(input_data)
+        sentences_w_word_tokenized = [
+            self.word_tokenize(sentence,format="text") for sentence in self.sent_tokenize(normalized)]
+        
+        return sentences_w_word_tokenized
+
 
     def embedding(self, docs): #docs: list of lists of tokenized sentences
         output = []
