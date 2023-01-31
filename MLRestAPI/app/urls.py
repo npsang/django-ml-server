@@ -11,5 +11,5 @@ router.register("mlmodels", views.MLModelViewSet, "mlmodel")
 urlpatterns = [
     path('', include(router.urls)),
     path('mlmodelwsgi/', views.MLModelWSGI.as_view()),
-    path('compute/', views.ComputeViewSet.as_view())
+    path('compute/', views.ComputeViewSet.as_view()),
 ]
