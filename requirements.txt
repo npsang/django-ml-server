@@ -4,3 +4,5 @@ Django==4.1.5
 djangorestframework==3.14.0
 mysqlclient==2.1.1
 django-cors-headers==3.13.0
+underthesea==6.0.3
+sentence-transformers==2.2.2
