@@ -44,29 +44,32 @@ class ComputeViewSet(APIView):
         }
         
         """
+        # CREATE DOCUMENT OBJECT
         user_id = request.data['user']
-
         # TestFile
         test_file = request.data['testFile'][0]
         test_file['user'] = user_id
         test_file['name'] = 'test.pdf'
         test_file['file_type'] = 'pdf'
 
-        
+    
         # TemplateFile
         # Case 1: TemplateFile chi co mot file
-        template_file = request.data['templateFile']
         # Case 2: TemplateFile co nhieu hon mot file
+        template_files = request.data['templateFile']
+        for template_file in template_files:
+            template_file['user'] = user_id
+            template_file['name'] = 'test.pdf'
+            template_file['file_type'] = 'pdf'
 
         test_file_serializer = DocumentSerializer(data=test_file)
-        print(DocumentSerializer.is_valid(test_file_serializer))
-        print(test_file_serializer)
+
+        hello = 'test'
         if DocumentSerializer.is_valid(test_file_serializer):
-            test_file_serializer.save()
-            return Response(status=status.HTTP_201_CREATED)
+            hello = test_file_serializer.save()
 
         serializer = DocumentSerializer(data=request.data)
-        return Response(status=status.HTTP_201_CREATED)
+        return Response(hello,status=status.HTTP_201_CREATED)
 
     def get(self, request):
         input_data1 = request.data['doc1']

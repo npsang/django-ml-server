@@ -25,6 +25,11 @@ class UserSerializer(serializers.ModelSerializer):
 
 class DocumentSerializer(serializers.ModelSerializer):
 
+    def create(self, validated_data):
+        document = Document(**validated_data)
+        document.save()
+        return document.id
+
     class Meta:
         model = Document
         fields = '__all__'
