@@ -17,29 +17,72 @@ from .serializers import (
     MLModelSerializer
 )
 
-# from plagiarism.wsgi import registry
+from MLRestAPI.wsgi import registry
 # from ml.registry import MLRegistry
 # from ..ml.registry import MLRegistry
 
 # Create your views here.
 class ComputeViewSet(APIView):
-    pass
+    
+    def post(self, request):
+        """
+        {
+            "user": "user_id",
+            "testFile": [
+                {
+                    "url": "https://test.file.example.com"
+                }
+            ],
+            "templateFile": [
+                {
+                    "url": "https://template1.file.example.com"
+                },
+                {
+                    "url": "https://template2.file.example.com"
+                }
+            ]
+        }
+        
+        """
+        user_id = request.data['user']
 
-#     def get(self, request):
-#         input_data1 = request.data['doc1']
-#         input_data2 = request.data['doc2']
+        # TestFile
+        test_file = request.data['testFile'][0]
+        test_file['user'] = user_id
+        test_file['name'] = 'test.pdf'
+        test_file['file_type'] = 'pdf'
 
-#         my_alg = registry.model[int(request.data['model_id'])]
+        
+        # TemplateFile
+        # Case 1: TemplateFile chi co mot file
+        template_file = request.data['templateFile']
+        # Case 2: TemplateFile co nhieu hon mot file
 
-#         emb1 = my_alg.embedding([input_data1])
-#         emb2 = my_alg.embedding([input_data2])
+        test_file_serializer = DocumentSerializer(data=test_file)
+        print(DocumentSerializer.is_valid(test_file_serializer))
+        print(test_file_serializer)
+        if DocumentSerializer.is_valid(test_file_serializer):
+            test_file_serializer.save()
+            return Response(status=status.HTTP_201_CREATED)
 
-#         # print(type(emb1), emb1)
-#         avg_cos_sim, res = my_alg.compute(emb1, emb2)
-#         print(avg_cos_sim)
-#         print(res)
+        serializer = DocumentSerializer(data=request.data)
+        return Response(status=status.HTTP_201_CREATED)
 
-#         return Response(avg_cos_sim, status=status.HTTP_200_OK)
+    def get(self, request):
+        input_data1 = request.data['doc1']
+        input_data2 = request.data['doc2']
+
+        my_alg = registry.model[int(request.data['model_id'])]
+
+        emb1 = my_alg.embedding([input_data1])
+        emb2 = my_alg.embedding([input_data2])
+
+        # print(type(emb1), emb1)
+        avg_cos_sim, res = my_alg.compute(emb1, emb2)
+        print(avg_cos_sim)
+        print(res)
+
+        return Response(avg_cos_sim, status=status.HTTP_200_OK)
 
 class MLModelViewSet(viewsets.ViewSet, generics.ListAPIView, generics.RetrieveAPIView):
     queryset = MLModel.objects.filter(active=True)
@@ -64,11 +107,6 @@ class UserViewSet(viewsets.ViewSet, generics.CreateAPIView,
                     generics.ListAPIView, generics.RetrieveAPIView):
     queryset = User.objects.filter(is_active=True)
     serializer_class = UserSerializer
-
-    def get_permissions(self):
-        if self.action == 'get_current_user':
-            return [permissions.IsAuthenticated()]
-        return [permissions.AllowAny()]
 
 
 class MLModelWSGI(APIView):

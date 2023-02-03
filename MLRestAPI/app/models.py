@@ -17,8 +17,20 @@ class ItemBase(models.Model):
 
 
 class Document(ItemBase):
+    pdf = 'pdf'
+    docx = 'docx'
+    txt = 'txt'
+    FILE_TYPE_CHOICES = [
+        (pdf, 'PDF'),
+        (docx, 'Docx'),
+        (txt, 'Txt')
+    ]
+
     document = models.FileField(upload_to='uploads/%Y/%M/%D/', null=True)
-    name = models.CharField(max_length=150, default="")
+    url = models.URLField()
+    name = models.CharField(max_length=255)
+    file_type = models.CharField(max_length=4, choices= FILE_TYPE_CHOICES, default=pdf)
+    
     user = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, related_name='documents', default=None)
     pre_processing = models.BooleanField(default=False)
     content = models.TextField(default="")

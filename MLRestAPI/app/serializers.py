@@ -30,6 +30,13 @@ class DocumentSerializer(serializers.ModelSerializer):
         fields = '__all__'
 
 
+class SentenceSerializer(serializers.ModelSerializer):
+
+    class Meta:
+        model = Sentence
+        fields = '__all__'
+
+
 class MLModelSerializer(serializers.ModelSerializer):
 
     class Meta:
