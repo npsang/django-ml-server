@@ -12,10 +12,13 @@ class ComputeSimilarity:
 
         self.text_normalize = text_normalize
         self.sent_tokenize = sent_tokenize
-        self.word_tokenize = word_tokenize
+        # self.word_tokenize = word_tokenize
 
         self.model = SentenceTransformer(
             path_to_artifacts + 'make-multilingual-sys-2023-01-12_01-42-22')
+
+    def word_tokenize(self, input_data):
+        return word_tokenize(input_data, format='text')
 
     def preprocessing(self, input_data):
         """
@@ -30,12 +33,9 @@ class ComputeSimilarity:
         return sentences_w_word_tokenized
 
 
-    def embedding(self, docs): #docs: list of lists of tokenized sentences
-        output = []
-        for doc in docs:
-            encode_doc = self.model.encode(doc)
-            output.append(encode_doc)
-        return output
+    def embedding(self, doc): #doc: list of tokenized sentences
+        encode_doc = self.model.encode(doc)
+        return encode_doc
 
     def post_processing(self):
         pass

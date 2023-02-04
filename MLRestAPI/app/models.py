@@ -26,7 +26,7 @@ class Document(ItemBase):
         (txt, 'Txt')
     ]
 
-    document = models.FileField(upload_to='uploads/%Y/%M/%D/', null=True)
+    document = models.CharField(max_length=255, null=True)
     url = models.URLField()
     name = models.CharField(max_length=255)
     file_type = models.CharField(max_length=4, choices= FILE_TYPE_CHOICES, default=pdf)
@@ -40,9 +40,9 @@ class Sentence(ItemBase):
     document = models.ForeignKey(Document, on_delete=models.CASCADE, related_name='sentences')
     content = models.CharField(max_length=1000)
     is_tokenized = models.BooleanField(default=False)
-    content_tokenized = models.CharField(max_length=1000)
+    content_tokenized = models.CharField(max_length=1000,null=True)
     is_encode = models.BooleanField(default=False)
-    encode = models.BinaryField() #np.array
+    encode = models.BinaryField(editable=True) #np.array
 
 
 class MLModel(ItemBase):

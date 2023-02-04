@@ -36,6 +36,11 @@ class DocumentSerializer(serializers.ModelSerializer):
 
 
 class SentenceSerializer(serializers.ModelSerializer):
+    
+    def create(self, validated_data):
+        sentence = Sentence(**validated_data)
+        sentence.save()
+        return sentence.id
 
     class Meta:
         model = Sentence

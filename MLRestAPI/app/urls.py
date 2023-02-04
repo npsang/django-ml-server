@@ -7,6 +7,7 @@ router = routers.DefaultRouter()
 router.register("users", views.UserViewSet, "user")
 router.register("documents", views.DocumentViewSet, "document")
 router.register("mlmodels", views.MLModelViewSet, "mlmodel")
+router.register('sentences', views.SentenceViewSet, 'sentence')
 
 urlpatterns = [
     path('', include(router.urls)),
