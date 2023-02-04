@@ -144,7 +144,7 @@ class ComputeViewSet(APIView):
                         Sentence.objects.get(pk=sentence_id).encode = encode_base64
                         # sentence_.encode = encode_base64
             # Test 
-            print(Sentence.objects.get(pk=1))
+            # print(Sentence.objects.get(pk=1))
             # res['testFile'].append(json.dumps(Document.objects.get(pk=output)))
 
 
