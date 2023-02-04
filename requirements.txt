@@ -16,10 +16,6 @@ joblib==1.2.0
 mysqlclient==2.1.1
 nltk==3.8.1
 numpy==1.24.1
-nvidia-cublas-cu11==11.10.3.66
-nvidia-cuda-nvrtc-cu11==11.7.99
-nvidia-cuda-runtime-cu11==11.7.99
-nvidia-cudnn-cu11==8.5.0.96
 packaging==23.0
 pdfminer.six==20221105
 Pillow==9.4.0
