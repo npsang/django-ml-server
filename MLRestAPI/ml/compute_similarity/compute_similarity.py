@@ -15,8 +15,10 @@ class ComputeSimilarity:
         self.sent_tokenize = sent_tokenize
         # self.word_tokenize = word_tokenize
 
+        # self.model = SentenceTransformer(
+        #     path_to_artifacts + 'make-multilingual-sys-2023-01-12_01-42-22')
         self.model = SentenceTransformer(
-            path_to_artifacts + 'make-multilingual-sys-2023-01-12_01-42-22')
+            path_to_artifacts)
 
     def word_tokenize(self, input_data):
         return word_tokenize(input_data, format='text')
