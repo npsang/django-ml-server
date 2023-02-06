@@ -1,14 +1,15 @@
 from sentence_transformers import SentenceTransformer, util
 import numpy as np
-import os
+# import os
 from underthesea import text_normalize, sent_tokenize, word_tokenize
 
-cwd = os.getcwd() # /home/sangnguyendesktop/Code/project/plagiarism
+# cwd = os.getcwd() # /home/sangnguyendesktop/Code/project/plagiarism
 
 
 class ComputeSimilarity:
     def __init__(self):
-        path_to_artifacts = cwd+"/ml/compute_similarity/models/"
+        # path_to_artifacts = cwd+"/ml/compute_similarity/models/"
+        path_to_artifacts = 'VoVanPhuc/sup-SimCSE-VietNamese-phobert-base'
 
         self.text_normalize = text_normalize
         self.sent_tokenize = sent_tokenize
