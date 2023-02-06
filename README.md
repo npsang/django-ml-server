@@ -4,27 +4,27 @@
 
 > ### Ubuntu 22 LTS set up
 
-* `sudo apt-get update`
+1. `sudo apt-get update`
 
-* `sudo apt-get upgrade`
+2. `sudo apt-get upgrade`
 
-* `sudo apt install python3-pip`
+3. `sudo apt install python3-pip`
 
-* `sudo apt-get install python3-dev default-libmysqlclient-dev build-essential`
+4. `sudo apt-get install python3-dev default-libmysqlclient-dev build-essential`
 
 > ### Django ML AWS EC2 project set up
 
-* `git clone https://github.com/npsang/django-ml-aws-ec2.git`
+1. `git clone https://github.com/npsang/django-ml-aws-ec2.git`
 
-* `cd django-ml-aws-ec2`
+2. `cd django-ml-aws-ec2`
 
-* `pip3 install torch torchvision torchaudio --extra-index-url https://download.pytorch.org/whl/cpu`
+3. `pip3 install torch torchvision torchaudio --extra-index-url https://download.pytorch.org/whl/cpu`
 
-* `pip3 install -r requirements.txt`
+4. `pip3 install -r requirements.txt`
 
 > ### Run project
 
-* `cd MLRestAPI`
+1. `cd MLRestAPI`
 
-* `python3 manage.py runserver 0.0.0.0:8000`
+2. `python3 manage.py runserver 0.0.0.0:8000`
     Then you can access project with url: <http://35.77.218.136:8000/>
