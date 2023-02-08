@@ -2,6 +2,22 @@
 
 ## Deploy machine learning Django App on AWS EC2
 
+> ### Window Set up with IIS
+
+1. Create python virutal environment and active
+   > `cd C:\`
+   > `mkdir pyenv`
+   > `cd pyenv`
+   > `python -m venv djangoML`
+   > `.\djangoML\Scripts\activate`
+   Now environment is djangoML
+   > `python -m pip install --upgrade pip`
+2. Clone project
+   > `git clone https://github.com/npsang/django-ml-aws-ec2.git`
+   > `cd django-ml-aws-ec2`
+3. `pip3 install torch torchvision torchaudio --extra-index-url https://download.pytorch.org/whl/cu117`
+4. `pip install -r .\requirements.txt`
+
 > ### Ubuntu 22 LTS set up
 
 1. `sudo apt-get update`
@@ -11,6 +27,8 @@
 3. `sudo apt install python3-pip`
 
 4. `sudo apt-get install python3-dev default-libmysqlclient-dev build-essential`
+
+5. `pip install -r .\requirements.txt`
 
 > ### Django ML AWS EC2 project set up
 
