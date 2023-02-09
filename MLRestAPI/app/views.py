@@ -83,6 +83,7 @@ class ComputeViewSet(APIView):
                     'id': str(i),
                     'content': sentence,
                     'matchId': None,
+                    'score': None,
 
                 } for i, sentence in enumerate(test_sentences)
             ]
@@ -96,18 +97,28 @@ class ComputeViewSet(APIView):
                     'name': template_path.split('/')[-1],
                     'data': [
                         {
-                            'id': i,
+                            'id': str(i),
                             'content': sentence,
                             'matchId': None,
+                            'score': None,
 
                         } for i, sentence in enumerate(template_sentences)
                     ]
                 })
             score, cosin_matrix, positions = pipeline.compute(test_embedding, template_embedding)
             for test_sentence_id, pos_in_template in enumerate(positions):
-                res['testFile'][0]['data'][test_sentence_id]['matchId'] = pos_in_template
-                res['templateFile'][0]['data'][pos_in_template]['matchId'] = test_sentence_id
-                res['templateFile'][0]['data'][pos_in_template]['score'] = cosin_matrix[test_sentence_id][pos_in_template]
+                res['testFile'][0]['data'][test_sentence_id]['matchId'] = str(test_sentence_id)
+                res['testFile'][0]['data'][test_sentence_id]['score'] = cosin_matrix[test_sentence_id][pos_in_template]
+
+                if res['templateFile'][0]['data'][pos_in_template]['matchId']:
+                    if res['templateFile'][0]['data'][pos_in_template]['score'] < cosin_matrix[test_sentence_id][pos_in_template]:
+                        res['templateFile'][0]['data'][pos_in_template]['matchId'] = str(test_sentence_id)
+                        res['templateFile'][0]['data'][pos_in_template]['score'] = cosin_matrix[test_sentence_id][pos_in_template]
+                    else:
+                        pass
+                else: 
+                    res['templateFile'][0]['data'][pos_in_template]['matchId'] = str(test_sentence_id)
+                    res['templateFile'][0]['data'][pos_in_template]['score'] = cosin_matrix[test_sentence_id][pos_in_template]
 
                 print(f"Cau {test_sentence_id} cua {res['testFile'][0]['name']} tuong dong voi")
                 print(f"Cau {pos_in_template} cua {res['templateFile'][0]['name']}")
