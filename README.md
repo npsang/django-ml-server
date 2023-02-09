@@ -17,6 +17,8 @@
    > `cd django-ml-aws-ec2`
 3. `pip3 install torch torchvision torchaudio --extra-index-url https://download.pytorch.org/whl/cu117`
 4. `pip install -r .\requirements.txt`
+5. Install MySQL
+6. Connect MySQL
 
 > ### Ubuntu 22 LTS set up
 
@@ -46,3 +48,16 @@
 
 2. `python3 manage.py runserver 0.0.0.0:8000`
     Then you can access project with url: <http://35.77.218.136:8000/>
+
+>            #         """  
+            #         # 1. set the field to Django BinaryField
+            #         from django.db import models
+            #         np_field = models.BinaryField()
+            #         # 2. transform numpy array to python byte using pickle dumps, then encoded by base64
+            #         # np_bytes = pickle.dumps(np_array)
+            #         np_base64 = base64.b64encode(np_bytes)
+            #         model.np_field = np_base64
+            #         # 3. get the numpy array from django model
+            #         np_bytes = base64.b64decode(model.np_field)
+            #         np_array = pickle.loads(np_bytes)
+            #         """`

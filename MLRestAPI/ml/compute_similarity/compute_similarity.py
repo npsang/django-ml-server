@@ -1,27 +1,27 @@
 from sentence_transformers import SentenceTransformer, util
 from transformers import AutoModel
 import numpy as np
-# import os
+import os
 from underthesea import text_normalize, sent_tokenize, word_tokenize
 
-# cwd = os.getcwd() # /home/sangnguyendesktop/Code/project/plagiarism
+cwd = os.getcwd() # /home/sangnguyendesktop/Code/project/plagiarism
 
 
 class ComputeSimilarity:
     def __init__(self):
-        # path_to_artifacts = cwd+"/ml/compute_similarity/models/"
-        path_to_artifacts = 'VoVanPhuc/sup-SimCSE-VietNamese-phobert-base'
+        path_to_artifacts = cwd+"/ml/compute_similarity/models/"
+        # path_to_artifacts = 'VoVanPhuc/sup-SimCSE-VietNamese-phobert-base'
 
         self.text_normalize = text_normalize
         self.sent_tokenize = sent_tokenize
         # self.word_tokenize = word_tokenize
 
-        # self.model = SentenceTransformer(
-        #     path_to_artifacts + 'make-multilingual-sys-2023-01-12_01-42-22')
         self.model = SentenceTransformer(
-            path_to_artifacts)
-        self.model_2 = AutoModel(
-            'VoVanPhuc/vietnamese-summarization')
+            path_to_artifacts + 'make-multilingual-sys-2023-01-12_01-42-22')
+        # self.model = SentenceTransformer(
+        #     path_to_artifacts)
+        # self.model_2 = AutoModel(
+        #     'VoVanPhuc/vietnamese-summarization')
 
     def word_tokenize(self, input_data):
         return word_tokenize(input_data, format='text')
@@ -32,11 +32,13 @@ class ComputeSimilarity:
         2. Sentence tokenize
         3. Word tokenize
         """
+        sentences = []
+        sentences_w_word_tokenized = []
         normalized = self.text_normalize(input_data)
-        sentences_w_word_tokenized = [
-            self.word_tokenize(sentence,format="text") for sentence in self.sent_tokenize(normalized)]
-        
-        return sentences_w_word_tokenized
+        for sentence in self.sent_tokenize(normalized):
+            sentences_w_word_tokenized.append(self.word_tokenize(sentence))
+            sentences.append(sentence)
+        return sentences, sentences_w_word_tokenized
 
 
     def embedding(self, doc): #doc: list of tokenized sentences

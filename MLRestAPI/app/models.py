@@ -37,7 +37,7 @@ class Document(ItemBase):
 
 
 class Sentence(ItemBase):
-    document = models.ForeignKey(Document, on_delete=models.CASCADE, related_name='sentences')
+    document = models.ForeignKey(Document, on_delete=models.CASCADE, related_name='sentences', null=True, default=None)
     content = models.CharField(max_length=1000)
     is_tokenized = models.BooleanField(default=False)
     content_tokenized = models.CharField(max_length=1000,null=True)

@@ -3,10 +3,9 @@ from .models import User, Document, Sentence, MLModel
 
 
 class UserSerializer(serializers.ModelSerializer):
+    documents = serializers.PrimaryKeyRelatedField(many=True, read_only=True)
     
     def create(self, validated_data):
-        # validated_data['documents'] = set(validated_data['documents'])
-        documents = validated_data.pop('documents')
         user = User(**validated_data)
         
         user.set_password(validated_data['password'])
@@ -24,15 +23,17 @@ class UserSerializer(serializers.ModelSerializer):
 
 
 class DocumentSerializer(serializers.ModelSerializer):
+    sentences = serializers.PrimaryKeyRelatedField(many=True, read_only=True)
 
     def create(self, validated_data):
         document = Document(**validated_data)
         document.save()
-        return document.id
+        return document.id, document
 
     class Meta:
         model = Document
-        fields = '__all__'
+        fields = ["id", "document", "url", "name", "file_type",
+                "user", "pre_processing", "content", "sentences"]
 
 
 class SentenceSerializer(serializers.ModelSerializer):
