@@ -41,9 +41,10 @@ class ComputeSimilarity:
         return sentences, sentences_w_word_tokenized
 
 
-    def embedding(self, doc): #doc: list of tokenized sentences
-        encode_doc = self.model.encode(doc)
-        return encode_doc
+    def embedding(self, sentences): #sentences: list of tokenized sentences
+        sentences = np.array(sentences)
+        encode_sentences = self.model.encode(sentences)
+        return encode_sentences
 
     def post_processing(self):
         pass
@@ -55,4 +56,4 @@ class ComputeSimilarity:
         for i in range(len(doc_a)):
             sum_max+=res[i][temp[i]]
         avg_cos_sim=sum_max/float(len(doc_a))
-        return avg_cos_sim, res       #return: cos_sim trung bình giữa doc_a với doc_b, array kết quả cos_sim giữa các câu
+        return avg_cos_sim, res, temp       #return: cos_sim trung bình giữa doc_a với doc_b, array kết quả cos_sim giữa các câu, temp vi tri cac cau diem cao

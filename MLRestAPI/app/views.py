@@ -1,9 +1,6 @@
 from rest_framework import viewsets, generics, status, permissions
 from rest_framework.views import APIView
 from rest_framework.response import Response
-from rest_framework.decorators import action
-from rest_framework.parsers import MultiPartParser
-import json
 import pickle
 import base64
 from .models import (
@@ -34,17 +31,39 @@ class ComputeViewSet(APIView):
         4. Compute and return
         Return
         res = {
-            'test_file': {'sentences': list_of_sentences},
-            'templates_file: [
+            'testFile': [
                 {
-                    'sentences': list_of_sentences,
-                    'compute_result': compute_result_between_test_and_template
+                    "id": "document_id",
+                    "name": "string",
+                    "data": [
+                        {
+                            "id": "sentence_id",
+                            "content": "sentence 1",
+                            "matchId": "other_document_sentence_id"
+                        }
+                    ]
+                }
+            ],
+            'templateFile: [
+                {
+                    "id": "document_id",
+                    "name": "string",
+                    "data": [
+                        {
+                            "id": "sentence_id",
+                            "name": "string",
+                            "data": [
+                                {
+                                    "id": "sentence_id",
+                                    "content": "sentence 1",
+                                    "matchId": "other_document_sentence_id"
+                                }
+                            ]
+                        }
+                    ]
+                    
             
-                },
-                {
-                    'sentences': list_of_sentences,
-                    'compute_result': compute_result_between_test_and_template
-                },
+                }
                 ...
                 ,
                 ]
@@ -52,31 +71,61 @@ class ComputeViewSet(APIView):
         }
         
         """    
-        res = {'test_file': None, 'templates_file': []}
+        res = {'testFile': [], 'templateFile': []}
         pipeline = registry.model[mlmodel_id]
         test_sentences, test_sentences_tokenized = pipeline.preprocessing(readPDFFile(test_path))
         test_embedding = pipeline.embedding(test_sentences_tokenized)
-        res['test_file'] = {'sentences':test_sentences}
-        for template_path in templates_path:
+        res['testFile'].append({
+            'id': '0',
+            'name': test_path.split('/')[-1],
+            'data': [
+                {
+                    'id': str(i),
+                    'content': sentence,
+                    'matchId': None,
+
+                } for i, sentence in enumerate(test_sentences)
+            ]
+            })
+        for i, template_path in enumerate(templates_path):
             template_sentences, template_sentences_tokenized = pipeline.preprocessing(readPDFFile(template_path))
             template_embedding = pipeline.embedding(template_sentences_tokenized)
-            res['templates_file'].append(
-                {'sentences': template_sentences,
-                'compute_result': pipeline.compute(test_embedding, template_embedding)})
+            res['templateFile'].append(
+                {
+                    'id': str(i+1),
+                    'name': template_path.split('/')[-1],
+                    'data': [
+                        {
+                            'id': i,
+                            'content': sentence,
+                            'matchId': None,
+
+                        } for i, sentence in enumerate(template_sentences)
+                    ]
+                })
+            score, cosin_matrix, positions = pipeline.compute(test_embedding, template_embedding)
+            for test_sentence_id, pos_in_template in enumerate(positions):
+                res['testFile'][0]['data'][test_sentence_id]['matchId'] = pos_in_template
+                res['templateFile'][0]['data'][pos_in_template]['matchId'] = test_sentence_id
+                res['templateFile'][0]['data'][pos_in_template]['score'] = cosin_matrix[test_sentence_id][pos_in_template]
+
+                print(f"Cau {test_sentence_id} cua {res['testFile'][0]['name']} tuong dong voi")
+                print(f"Cau {pos_in_template} cua {res['templateFile'][0]['name']}")
+                print(f"voi so diem la {cosin_matrix[test_sentence_id][pos_in_template]}")
         return res
+
         
 
     def post(self, request):
         """
-        request param
-        (this version only support .pdf file)
-        REQUIRED:
-            request.test_path (string): path to test file
-            request.templateds_path (list): list of string which is path to templates file
-        OPPTION:
-            request.mlmodel_id (int): default=1, id of choosing ml model for compute
+        request.data = {
+            "test_path": "/home/sangnguyendesktop/Public/2021_Binh_Huong_2021_VCAA.pdf",
+            "templates_path": [
+                "/home/sangnguyendesktop/Public/2021_Binh_Huong_2021_VCAA.pdf",
+                "/home/sangnguyendesktop/Public/20Hien_Thang_YdinhNCKHSV_2021_paper.pdf"
+            ]
+        }
         """
-        print(request.data)
         try:
             
             res = self._compute(
