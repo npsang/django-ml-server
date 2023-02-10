@@ -33,7 +33,6 @@ class Document(ItemBase):
     
     user = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, related_name='documents', default=None)
     pre_processing = models.BooleanField(default=False)
-    content = models.TextField(default="")
 
 
 class Sentence(ItemBase):
