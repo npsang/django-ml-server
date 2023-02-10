@@ -17,11 +17,15 @@
    * `cd django-ml-server`
    * `python -m pip install --upgrade pip setuptools wheel`
    * `python -m venv ml_env`
-   * `ml_env\Scripts\activate` The terminal should show something like '(ml_env) ~\DATN\django-ml-server\"'
+   * `ml_env\Scripts\activate` The terminal should show something like `"(ml_env) ~\DATN\django-ml-server\"`
    * `python -m pip install --upgrade pip setuptools wheel`
    * `pip3 install torch torchvision torchaudio --extra-index-url https://download.pytorch.org/whl/cu117`
    * `pip install -r requirements.txt`
-3. Create Database MySQL
+3. Download Machine Learning Model
+   * Download <https://drive.google.com/drive/folders/1KzWmS_CIP_ddDotJwIUY9PwU3Urk7x-B?usp=share_link>
+   * Unzip the download you get the folder name `make-multilingual-sys-2023-01-12_03-33-43`
+   * Copy the folder into the project in `path_to_project\DATN\django-ml-server\MLRestAPI\ml\compute_similarity\models\`
+4. Create Database MySQL
    * Open MySQL Workbench
    * Create new connection or use already connection with below infomation:
       * `HOST: 127.0.0.1`
@@ -34,12 +38,12 @@
       * Charset: `utf8mb4`
       * Collation: `utf8mb4_unicode_ci`
       * Select Apply then select Apply
-4. Run
+5. Run
    * `cd MLRestAPI`
    * `python manage.py makemigrations`
    * `python manage.py migrate`
    * `python manage.py runserver`
-5. Next time run
+6. Next time run
    * `ml_env\Scripts\activate`
    * `cd MLRestAPI`
    * `python manage.py makemigrations`
