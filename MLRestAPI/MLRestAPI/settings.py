@@ -69,12 +69,20 @@ WSGI_APPLICATION = 'MLRestAPI.wsgi.application'
 # https://docs.djangoproject.com/en/4.1/ref/settings/#databases
 
 DATABASES = {
-    'default': {
+    # 'default': {
+    #     'ENGINE': 'django.db.backends.mysql',
+    #     'NAME': 'rds_ml_api',
+    #     'USER': 'admin',
+    #     'PASSWORD': 'Ssharingan01',
+    #     'HOST': 'mlrestapi.czdx2mozcial.ap-northeast-1.rds.amazonaws.com',
+    #     'PORT': 3306
+    # }
+        'default': {
         'ENGINE': 'django.db.backends.mysql',
-        'NAME': 'rds_ml_api',
-        'USER': 'admin',
-        'PASSWORD': 'Ssharingan01',
-        'HOST': 'mlrestapi.czdx2mozcial.ap-northeast-1.rds.amazonaws.com',
+        'NAME': 'ml_restapi_db',
+        'USER': 'root',
+        'PASSWORD': 'pw1234',
+        'HOST': '127.0.0.1',
         'PORT': 3306
     }
 }
