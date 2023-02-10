@@ -1,6 +1,37 @@
-# django-ml-aws-ec2
+# django ml server for compute document similarity web app
 
 ## Deploy machine learning Django App on AWS EC2
+
+> ### Window set up for localhost
+
+1. Install python 3.10.6
+   * Windows installer (32-bit) <https://www.python.org/ftp/python/3.10.6/python-3.10.6.exe>
+   * Windows installer (64-bit) <https://www.python.org/ftp/python/3.10.6/python-3.10.6-amd64.exe>
+   * Should select install for all users, and Add to PATH
+   * Check if python installed with command `python --version`
+2. Create python virtual environment
+   * Open Terminal or Powershell
+   * `mkdir DATN`
+   * `cd DATN`
+   * `git clone https://github.com/npsang/django-ml-server.git`
+   * `cd django-ml-server`
+   * `python -m pip install --upgrade pip setuptools wheel`
+   * `python -m venv ml_env`
+   * `ml_env\Scripts\activate` The terminal should show something like '(ml_env) ~\DATN\django-ml-server\"'
+   * `python -m pip install --upgrade pip setuptools wheel`
+   * `pip3 install torch torchvision torchaudio --extra-index-url https://download.pytorch.org/whl/cu117`
+   * `pip install -r requirements.txt`
+3. Run
+   * `cd MLRestAPI`
+   * `python manage.py makemigrations`
+   * `python manage.py migrate`
+   * `python manage.py runserver`
+4. Next time run
+   * `ml_env\Scripts\activate`
+   * `cd MLRestAPI`
+   * `python manage.py makemigrations`
+   * `python manage.py migrate`
+   * `python manage.py runserver`
 
 > ### Window Set up with IIS
 
