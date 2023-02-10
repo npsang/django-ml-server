@@ -1,6 +1,6 @@
 # django ml server for compute document similarity web app
 
-## Deploy machine learning Django App on AWS EC2
+## Deploy machine learning Django App
 
 > ### Window set up for localhost
 
@@ -21,12 +21,25 @@
    * `python -m pip install --upgrade pip setuptools wheel`
    * `pip3 install torch torchvision torchaudio --extra-index-url https://download.pytorch.org/whl/cu117`
    * `pip install -r requirements.txt`
-3. Run
+3. Create Database MySQL
+   * Open MySQL Workbench
+   * Create new connection or use already connection with below infomation:
+      * `HOST: 127.0.0.1`
+      * `PORT: 3306`
+      * `USER: root`
+      * `Password`
+   * Connect above connection and create database:
+      * Select `Create a new scheme in the connected server` button
+      * Name: `ml_restapi_db`
+      * Charset: `utf8mb4`
+      * Collation: `utf8mb4_unicode_ci`
+      * Select Apply then select Apply
+4. Run
    * `cd MLRestAPI`
    * `python manage.py makemigrations`
    * `python manage.py migrate`
    * `python manage.py runserver`
-4. Next time run
+5. Next time run
    * `ml_env\Scripts\activate`
    * `cd MLRestAPI`
    * `python manage.py makemigrations`
@@ -48,8 +61,7 @@
    > `cd django-ml-aws-ec2`
 3. `pip3 install torch torchvision torchaudio --extra-index-url https://download.pytorch.org/whl/cu117`
 4. `pip install -r .\requirements.txt`
-5. Install MySQL
-6. Connect MySQL
+
 
 > ### Ubuntu 22 LTS set up
 
