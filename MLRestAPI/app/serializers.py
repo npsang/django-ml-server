@@ -21,7 +21,8 @@ class DocumentSerializer(serializers.ModelSerializer):
     class Meta:
         model = Document
         fields = ["id", "document", "url", "name", "file_type",
-                "user", "pre_processing", "sentences"]
+                "user", "pre_processing", "sentences",
+                'is_encode', 'encode']
 
 
 class SentenceSerializer(serializers.ModelSerializer):

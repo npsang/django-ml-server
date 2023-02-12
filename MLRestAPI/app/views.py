@@ -54,6 +54,7 @@ class SearchOnInternetViewSet(APIView):
 
         return Response(res,status=status.HTTP_201_CREATED)
 
+# 1 vs 1
 class ComputeViewSet(APIView):
 
     def post(self, request):
@@ -86,7 +87,7 @@ class ComputeViewSet(APIView):
             print(e) 
 
         return Response(res,status=status.HTTP_201_CREATED)
-
+# 1 vs many
 class ComputeCreateViewSet(APIView):
     
     def post(self, request):
@@ -153,7 +154,7 @@ class MLModelWSGI(APIView):
         return Response('hello world')
         # return Response(str(registry.model), status=status.HTTP_200_OK)
 
-
+# 1 vs 1
 def _compute(test_path, templates_path, mlmodel_id=1):
     """
     1. Read text from pdf file
@@ -252,7 +253,8 @@ def _compute(test_path, templates_path, mlmodel_id=1):
                 res['templateFile'][0]['data'][pos_in_template]['matchId'] = str(test_sentence_id)
                 res['templateFile'][0]['data'][pos_in_template]['score'] = cosin_matrix[test_sentence_id][pos_in_template]
     return res
-        
+
+# 1 vs many        
 def _compute_create_document_object(user, test_path, templates_path, mlmodel_id):
     """
     1. Creat document of object for each file_path
@@ -330,20 +332,22 @@ def _compute_create_document_object(user, test_path, templates_path, mlmodel_id)
                     sentence_serializer.save()
                 else:
                     print(sentence_serializer.errors)
+
             _embedding = pipeline.embedding(_sentences_tokenized)
             if _embedding.any():
                 _document.is_encode = True
-                # _document.encode = encodebase64
+                __np_bytes = pickle.dumps(_embedding)
+                __np_base64 = base64.b64encode(__np_bytes)
+                _document.encode = __np_base64
                 _document.save()
             
         else:
-            _sentences_tokenized = [sentence.content_tokenized for sentence in Sentence.objects.filter(document_id=_document.id)]
-            __embedding = pipeline.embedding(_sentences_tokenized)
-            __np_bytes = pickle.dumps(__embedding)
-            __np_base64 = base64.b64encode(__np_bytes)
-            np_bytes = base64.b64decode(__np_base64)
-            _embedding = pickle.loads(np_bytes)
-            
+            try:
+                _sentences_tokenized = [sentence.content_tokenized for sentence in Sentence.objects.filter(document_id=_document.id)]
+                np_bytes = base64.b64decode(_document.encode)
+                _embedding = pickle.loads(np_bytes)
+            except Exception as e:
+                print(f'Get : {e}')
 
         # Return respone
         if file['test_or_template'] == 'test':
