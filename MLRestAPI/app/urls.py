@@ -12,5 +12,7 @@ router.register('sentences', views.SentenceViewSet, 'sentence')
 urlpatterns = [
     path('', include(router.urls)),
     path('mlmodelwsgi/', views.MLModelWSGI.as_view()),
+    path('compute_create/', views.ComputeCreateViewSet.as_view()),
     path('compute/', views.ComputeViewSet.as_view()),
+    path('search_on_internet', views.SearchOnInternetViewSet.as_view())
 ]

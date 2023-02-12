@@ -27,21 +27,23 @@ class Document(ItemBase):
     ]
 
     document = models.CharField(max_length=255, null=True)
-    url = models.URLField()
+    url = models.URLField(null=True)
     name = models.CharField(max_length=255)
     file_type = models.CharField(max_length=4, choices= FILE_TYPE_CHOICES, default=pdf)
     
     user = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, related_name='documents', default=None)
     pre_processing = models.BooleanField(default=False)
+    
+    is_encode = models.BooleanField(default=False)
+    encode = models.BinaryField(editable=True, null=True) #np.array
 
 
 class Sentence(ItemBase):
     document = models.ForeignKey(Document, on_delete=models.CASCADE, related_name='sentences', null=True, default=None)
-    content = models.CharField(max_length=1000)
+    content = models.CharField(max_length=5000)
     is_tokenized = models.BooleanField(default=False)
-    content_tokenized = models.CharField(max_length=1000,null=True)
-    is_encode = models.BooleanField(default=False)
-    encode = models.BinaryField(editable=True) #np.array
+    content_tokenized = models.CharField(max_length=5000,null=True)
+
 
 
 class MLModel(ItemBase):

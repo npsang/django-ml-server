@@ -5,21 +5,9 @@ from .models import User, Document, Sentence, MLModel
 class UserSerializer(serializers.ModelSerializer):
     documents = serializers.PrimaryKeyRelatedField(many=True, read_only=True)
     
-    def create(self, validated_data):
-        user = User(**validated_data)
-        
-        user.set_password(validated_data['password'])
-        user.save()
-        return user
-        # return super().create(validated_data)
-
     class Meta:
         model = User
-        fields = ["id", "first_name", "last_name", "username",
-                "password", "email", "date_joined", "documents"]
-        extra_kwargs = {
-            'password': {'write_only': 'true'}
-        }
+        fields = ["id", "username", "documents"]
 
 
 class DocumentSerializer(serializers.ModelSerializer):
@@ -45,7 +33,8 @@ class SentenceSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Sentence
-        fields = '__all__'
+        fields = ["id", "document", "content",
+                "is_tokenized", "content_tokenized"]
 
 
 class MLModelSerializer(serializers.ModelSerializer):
