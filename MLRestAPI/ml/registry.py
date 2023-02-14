@@ -4,15 +4,21 @@ from app.models import MLModel
 class MLRegistry:
     
     def __init__(self):
-        self.model = {}
+        self.models = {}
 
-    def add_algorithm(self, algorithm_name, algorith_description, algorithm_version,owner, algorithm_object):
+    def add_algorithm(self,
+    algorithm_name,
+    acronym,
+    algorithm_description,
+    algorithm_version,
+    owner,
+    algorithm_object):
         database_object, _ = MLModel.objects.get_or_create(
             name=algorithm_name,
-            description=algorith_description,
+            acronym=acronym,
+            description=algorithm_description,
             version=algorithm_version,
             owner=owner,
         )
-        self.model[database_object.id] = algorithm_object
-
+        self.models[database_object.acronym] = algorithm_object
         

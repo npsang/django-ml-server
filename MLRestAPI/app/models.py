@@ -25,18 +25,28 @@ class Document(ItemBase):
         (docx, 'Docx'),
         (txt, 'Txt')
     ]
+    en = 'en'
+    vi = 'vi'
+    LANGUAGE_TYPE_CHOICES = [
+        (en, 'English'),
+        (vi, 'Vietnamese')
+    ]
 
-    document = models.CharField(max_length=255, null=True)
+    path = models.CharField(max_length=255, null=True)
     url = models.URLField(null=True)
+
     name = models.CharField(max_length=255)
-    file_type = models.CharField(max_length=4, choices= FILE_TYPE_CHOICES, default=pdf)
+    file_type = models.CharField(max_length=4, choices= FILE_TYPE_CHOICES, default=pdf)    
     
-    user = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, related_name='documents', default=None)
+    user = models.ForeignKey(User, on_delete=models.CASCADE, null=True, related_name='documents', default=None)
+    language =models.CharField(max_length=16, choices=LANGUAGE_TYPE_CHOICES, null=True)
     pre_processing = models.BooleanField(default=False)
     
-    is_encode = models.BooleanField(default=False)
-    encode = models.BinaryField(editable=True, null=True) #np.array
+    is_vi_encode = models.BooleanField(default=False)
+    vi_encode = models.BinaryField(editable=True, null=True) #np.array
 
+    is_cross_encode = models.BooleanField(default=False)
+    cross_encode = models.BinaryField(editable=True, null=True)
 
 class Sentence(ItemBase):
     document = models.ForeignKey(Document, on_delete=models.CASCADE, related_name='sentences', null=True, default=None)
@@ -44,10 +54,9 @@ class Sentence(ItemBase):
     is_tokenized = models.BooleanField(default=False)
     content_tokenized = models.CharField(max_length=5000,null=True)
 
-
-
 class MLModel(ItemBase):
     name = models.CharField(max_length=128)
+    acronym = models.CharField(max_length=32, null=True)
     description = models.CharField(max_length=1000)
     version = models.CharField(max_length=128)
     owner = models.CharField(max_length=128)

@@ -1,27 +1,17 @@
 from sentence_transformers import SentenceTransformer, util
-from transformers import AutoModel
 import numpy as np
 import os
 from underthesea import text_normalize, sent_tokenize, word_tokenize
 
 cwd = os.getcwd() # /home/sangnguyendesktop/Code/project/plagiarism
 
-class ComputeSimilarity:
+class ViEnCrossSimilarity:
     def __init__(self):
         path_to_artifacts = cwd+"/ml/compute_similarity/models/"
-        # path_to_artifacts = 'VoVanPhuc/sup-SimCSE-VietNamese-phobert-base'
-
         self.text_normalize = text_normalize
         self.sent_tokenize = sent_tokenize
-        # self.word_tokenize = word_tokenize
         self.model = SentenceTransformer(
-            path_to_artifacts + 'make-multilingual-sys-2023-01-12_03-33-43')
-        # self.model_2 = SentenceTransformer(
-        #     path_to_artifacts + 'make-multilingual-sys-2023-01-12_01-42-22')
-        # self.model = SentenceTransformer(
-        #     path_to_artifacts)
-        # self.model_2 = AutoModel(
-        #     'VoVanPhuc/vietnamese-summarization')
+            path_to_artifacts + 'ViEnCrossModel')
 
     def word_tokenize(self, input_data):
         return word_tokenize(input_data, format='text')

@@ -66,7 +66,6 @@
 3. `pip3 install torch torchvision torchaudio --extra-index-url https://download.pytorch.org/whl/cu117`
 4. `pip install -r .\requirements.txt`
 
-
 > ### Ubuntu 22 LTS set up
 
 1. `sudo apt-get update`

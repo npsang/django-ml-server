@@ -29,6 +29,7 @@ INSTALLED_APPS = [
     'rest_framework',
     'ml',
     'file_handle',
+    'search_internet',
 
 ]
 
