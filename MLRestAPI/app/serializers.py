@@ -7,11 +7,11 @@ class UserSerializer(serializers.ModelSerializer):
     
     class Meta:
         model = User
-        fields = ["id", "username", "documents"]
+        fields = ["username", "documents"]
 
 
 class DocumentSerializer(serializers.ModelSerializer):
-    sentences = serializers.PrimaryKeyRelatedField(many=True, read_only=True)
+    # sentences = serializers.PrimaryKeyRelatedField(many=True, read_only=True)
 
     def create(self, validated_data):
         document = Document(**validated_data)
@@ -21,9 +21,9 @@ class DocumentSerializer(serializers.ModelSerializer):
     class Meta:
         model = Document
         fields = ["id", "path", "url", "name", "file_type",
-                "user", "pre_processing", "sentences",
-                'language', 'is_vi_encode', 'vi_encode',
-                'is_cross_encode', 'cross_encode']
+                "user", "pre_processing",
+                'language', 'is_vi_encode',
+                'is_cross_encode',]
 
 
 class SentenceSerializer(serializers.ModelSerializer):

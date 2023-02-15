@@ -1,6 +1,8 @@
 from rest_framework import viewsets, generics, status, permissions
 from rest_framework.views import APIView
 from rest_framework.response import Response
+from rest_framework.renderers import JSONRenderer
+from django.http import HttpResponse
 import pickle
 import base64
 
@@ -45,10 +47,12 @@ class SearchOnInternetViewSet(APIView):
                 req=request.data,
                 pipelines=registry.models
             )
+            # res = JSONRenderer().render(res, renderer_context={'indent': 4})
         except Exception as e:
             print(f'POST - searchinternet. Maybe because of : {e}')
 
         return Response(res,status=status.HTTP_201_CREATED)
+        # return HttpResponse(res,status=status.HTTP_201_CREATED)
 
 # 1 vs 1
 class ComputeViewSet(APIView):
@@ -111,12 +115,13 @@ class ComputeCreateViewSet(APIView):
                 req=request.data,
                 pipelines=registry.models
             )
-            print(res)
+            # res = JSONRenderer().render(res, renderer_context={'indent': 4})
         except Exception as e:
             res = None
-            print(e) 
-
+            print(e)
+        
         return Response(res,status=status.HTTP_201_CREATED)
+        # return HttpResponse(res,status=status.HTTP_201_CREATED)
 
 class MLModelViewSet(viewsets.ViewSet, generics.ListAPIView, generics.RetrieveAPIView):
     queryset = MLModel.objects.filter(active=True)
@@ -346,6 +351,7 @@ def _compute_create_document_object(req, pipelines):
         {
             'id': _test_document.id,
             'name': _test_document.name,
+            'url': None,
             'data': [
                 {
                     'id': sentence.id,
@@ -357,9 +363,10 @@ def _compute_create_document_object(req, pipelines):
         }
     )
     # Preparing template
-
+    count = 0
     for _path in req['templateFile']:
-        print(f'{_path}')
+        count += 1
+        print(f'\n---------------------------------\nProcessing {_path}, total: {count}//{len(req["templateFile"])}')
         _template_file_matchID_score = {}
         _pipeline = None
         _test_embedding = None
@@ -372,9 +379,11 @@ def _compute_create_document_object(req, pipelines):
             user=User.objects.get_or_create(username=req['user'])[0],
         )
         if _is_create:
+            print('Creat new object: Processing Data')
             __sentences, __sentences_tokenized, __language, __embeddings = __after_created_new_document_object(
                 _template_document, pipelines)
         else:
+            print('Getting processed data from object')
             __sentences, __sentences_tokenized, __language, __embeddings = __get_document_object_data(_template_document)
 
         # HANDLE EMPTY TEXT FILE
@@ -387,20 +396,24 @@ def _compute_create_document_object(req, pipelines):
             test_language == template_language == 'vi'. Using vietnamese compute similarity pipeline
             Using vietnamese embedding
             """
+            print('Use Vietnamese compute similarity pipeline')
             _type = 'vi'
         else:
             """
             different language files. Using cross language similarity pipeline
             Using cross embedding
-            """           
+            """      
+            print('Use Cross compute similarity pipeline')
             _type = 'cross'
 
+        print('Computing: ...', end=' ')
         _pipeline = pipelines[_type]
         _test_embedding = next(item for item in _test_embeddings if item['type'] == _type)['embedding']
         _embedding = next(item for item in __embeddings if item['type'] == _type)['embedding']
 
         score, cosin_matrix, positions = _pipeline.compute(_test_embedding, _embedding)
-        
+        print('Done!!')
+        print('Return respone...')
         # Return respone
         _test_file = res['testFile'][0]['data']
         for test_sentence_id, pos_in_template in enumerate(positions):
@@ -420,22 +433,23 @@ def _compute_create_document_object(req, pipelines):
                 _template_file_matchID_score['matchId'] = test_sentence_id
                 _template_file_matchID_score['score'] = cosin_matrix[test_sentence_id][pos_in_template]
             
-            res['templateFile'].append(
-                {
-                    'id': _template_document.id,
-                    'name': _template_document.name,
-                    'score': score,
-                    'data': [
-                        {
-                            'id': sentence.id,
-                            'content': sentence.content,
-                            'matchId': _template_file_matchID_score['matchId'],
-                            'score': _template_file_matchID_score['score']
-                        } for sentence in Sentence.objects.filter(document_id=_template_document.id)
-                    ]
-                }
-            )
-
+        res['templateFile'].append(
+            {
+                'id': _template_document.id,
+                'name': _template_document.name,
+                'score': score,
+                'url': None,
+                'data': [
+                    {
+                        'id': sentence.id,
+                        'content': sentence.content,
+                        'matchId': _template_file_matchID_score['matchId'],
+                        'score': _template_file_matchID_score['score']
+                    } for sentence in Sentence.objects.filter(document_id=_template_document.id)
+                ]
+            }
+        )
+        print('Done!')
     return res
 
 def _search_on_internet(req, pipelines):
@@ -500,6 +514,7 @@ def _search_on_internet(req, pipelines):
                     'id': sentence.id,
                     'content': sentence.content,
                     'matchId': None,
+                    'url': None,
                     'score': []
                 } for sentence in Sentence.objects.filter(document_id=_test_document.id)
             ]
@@ -514,9 +529,7 @@ def _search_on_internet(req, pipelines):
         num_of_keyword=req['number_of_keyword'],
         num_of_result=req['number_of_result'],
     )
-    print(len(_template_path), len(_template_url))
     for _path, _url in zip(_template_path, _template_url):
-        print(f'{_path} - {_url}')
         _template_file_matchID_score = {}
         _pipeline = None
         _test_embedding = None
@@ -577,22 +590,22 @@ def _search_on_internet(req, pipelines):
                 _template_file_matchID_score['matchId'] = test_sentence_id
                 _template_file_matchID_score['score'] = cosin_matrix[test_sentence_id][pos_in_template]
             
-            res['templateFile'].append(
-                {
-                    'id': _template_document.id,
-                    'name': _template_document.name,
-                    'score': score,
-                    'url': _template_document.url,
-                    'data': [
-                        {
-                            'id': sentence.id,
-                            'content': sentence.content,
-                            'matchId': _template_file_matchID_score['matchId'],
-                            'score': _template_file_matchID_score['score']
-                        } for sentence in Sentence.objects.filter(document_id=_template_document.id)
-                    ]
-                }
-            )
+        res['templateFile'].append(
+            {
+                'id': _template_document.id,
+                'name': _template_document.name,
+                'score': score,
+                'url': _template_document.url,
+                'data': [
+                    {
+                        'id': sentence.id,
+                        'content': sentence.content,
+                        'matchId': _template_file_matchID_score['matchId'],
+                        'score': _template_file_matchID_score['score']
+                    } for sentence in Sentence.objects.filter(document_id=_template_document.id)
+                ]
+            }
+        )
 
     return res
 
