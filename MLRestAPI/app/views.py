@@ -582,7 +582,7 @@ def _search_on_internet(req, pipelines):
                 'id': _template_document.id,
                 'name': _template_document.name,
                 'score': score,
-                'url': None,
+                'url': _url,
                 'data': [
                     {
                         'id': sentence.id,
