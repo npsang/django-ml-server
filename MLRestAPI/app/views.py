@@ -367,7 +367,6 @@ def _compute_create_document_object(req, pipelines):
     for _path in req['templateFile']:
         count += 1
         print(f'\n---------------------------------\nProcessing {_path}, total: {count}//{len(req["templateFile"])}')
-        _template_file_matchID_score = {}
         _pipeline = None
         _test_embedding = None
         _embedding = None
@@ -406,33 +405,17 @@ def _compute_create_document_object(req, pipelines):
             print('Use Cross compute similarity pipeline')
             _type = 'cross'
 
-        print('Computing: ...', end=' ')
+        print(f'Computing: ... {_template_document.name}', end=' ')
         _pipeline = pipelines[_type]
+        print(f'pipeline: {_pipeline}')
         _test_embedding = next(item for item in _test_embeddings if item['type'] == _type)['embedding']
         _embedding = next(item for item in __embeddings if item['type'] == _type)['embedding']
 
         score, cosin_matrix, positions = _pipeline.compute(_test_embedding, _embedding)
         print('Done!!')
+        print(f'score: {score} - len(position): {len(positions)}')
         print('Return respone...')
         # Return respone
-        _test_file = res['testFile'][0]['data']
-        for test_sentence_id, pos_in_template in enumerate(positions):
-            # GET testFile from res
-            _test_file[test_sentence_id]['matchId'] = test_sentence_id
-            _test_file[test_sentence_id]['score'].append({
-                'document_id': _template_document.id,
-                'score': cosin_matrix[test_sentence_id][pos_in_template]})
-
-            if 'matchID' in _template_file_matchID_score:
-                if _template_file_matchID_score['score'] < cosin_matrix[test_sentence_id][pos_in_template]:
-                    _template_file_matchID_score['matchId'] = test_sentence_id
-                    _template_file_matchID_score['score'] = cosin_matrix[test_sentence_id][pos_in_template]
-                else:
-                    pass
-            else: 
-                _template_file_matchID_score['matchId'] = test_sentence_id
-                _template_file_matchID_score['score'] = cosin_matrix[test_sentence_id][pos_in_template]
-            
         res['templateFile'].append(
             {
                 'id': _template_document.id,
@@ -443,13 +426,34 @@ def _compute_create_document_object(req, pipelines):
                     {
                         'id': sentence.id,
                         'content': sentence.content,
-                        'matchId': _template_file_matchID_score['matchId'],
-                        'score': _template_file_matchID_score['score']
+                        'matchId': None,
+                        'score': None
                     } for sentence in Sentence.objects.filter(document_id=_template_document.id)
                 ]
             }
         )
-        print('Done!')
+        _test_file = res['testFile'][0]['data']
+        for test_sentence_id, pos_in_template in enumerate(positions):
+            # print(f'Processing at sentence_{test_sentence_id} of testFile - Pair with sentence_{pos_in_template} of templateFile')
+            # GET testFile from res
+            _test_file[test_sentence_id]['matchId'] = test_sentence_id
+            _test_file[test_sentence_id]['score'].append({
+                'document_id': _template_document.id,
+                'score': cosin_matrix[test_sentence_id][pos_in_template]})
+            # If matchId of templateFile sentences is not None -> compare with new value if less, assign value to new value
+            # print(res['templateFile'][-1]['data'][pos_in_template], f"matchId is not None{res['templateFile'][-1]['data'][pos_in_template]['matchId'] is not None}")
+            # res_template_data = res['templateFile'][-1]['data'][pos_in_template]
+            # print(res_template_data,  f"matchId is not None{res_template_data[pos_in_template]['matchId'] is not None}")
+            if res['templateFile'][-1]['data'][pos_in_template]['matchId']:
+                if res['templateFile'][-1]['data'][pos_in_template]['score'] < cosin_matrix[test_sentence_id][pos_in_template]:
+                    res['templateFile'][-1]['data'][pos_in_template]['matchId'] = test_sentence_id
+                    res['templateFile'][-1]['data'][pos_in_template]['score'] = cosin_matrix[test_sentence_id][pos_in_template]
+                else:
+                    continue
+            # If matchId of templateFile sentences is None -> add new value
+            else: 
+                res['templateFile'][-1]['data'][pos_in_template]['matchId'] = test_sentence_id
+                res['templateFile'][-1]['data'][pos_in_template]['score'] = cosin_matrix[test_sentence_id][pos_in_template]
     return res
 
 def _search_on_internet(req, pipelines):
@@ -573,39 +577,44 @@ def _search_on_internet(req, pipelines):
 
         # Return respone
         _test_file = res['testFile'][0]['data']
-        for test_sentence_id, pos_in_template in enumerate(positions):
-            # GET testFile from res
-            _test_file[test_sentence_id]['matchId'] = test_sentence_id
-            _test_file[test_sentence_id]['score'].append({
-                'document_id': _template_document.id,
-                'score': cosin_matrix[test_sentence_id][pos_in_template]})
-
-            if 'matchID' in _template_file_matchID_score:
-                if _template_file_matchID_score['score'] < cosin_matrix[test_sentence_id][pos_in_template]:
-                    _template_file_matchID_score['matchId'] = test_sentence_id
-                    _template_file_matchID_score['score'] = cosin_matrix[test_sentence_id][pos_in_template]
-                else:
-                    pass
-            else: 
-                _template_file_matchID_score['matchId'] = test_sentence_id
-                _template_file_matchID_score['score'] = cosin_matrix[test_sentence_id][pos_in_template]
-            
         res['templateFile'].append(
             {
                 'id': _template_document.id,
                 'name': _template_document.name,
                 'score': score,
-                'url': _template_document.url,
+                'url': None,
                 'data': [
                     {
                         'id': sentence.id,
                         'content': sentence.content,
-                        'matchId': _template_file_matchID_score['matchId'],
-                        'score': _template_file_matchID_score['score']
+                        'matchId': None,
+                        'score': None
                     } for sentence in Sentence.objects.filter(document_id=_template_document.id)
                 ]
             }
         )
+        _test_file = res['testFile'][0]['data']
+        for test_sentence_id, pos_in_template in enumerate(positions):
+            # print(f'Processing at sentence_{test_sentence_id} of testFile - Pair with sentence_{pos_in_template} of templateFile')
+            # GET testFile from res
+            _test_file[test_sentence_id]['matchId'] = test_sentence_id
+            _test_file[test_sentence_id]['score'].append({
+                'document_id': _template_document.id,
+                'score': cosin_matrix[test_sentence_id][pos_in_template]})
+            # If matchId of templateFile sentences is not None -> compare with new value if less, assign value to new value
+            # print(res['templateFile'][-1]['data'][pos_in_template], f"matchId is not None{res['templateFile'][-1]['data'][pos_in_template]['matchId'] is not None}")
+            # res_template_data = res['templateFile'][-1]['data'][pos_in_template]
+            # print(res_template_data,  f"matchId is not None{res_template_data[pos_in_template]['matchId'] is not None}")
+            if res['templateFile'][-1]['data'][pos_in_template]['matchId']:
+                if res['templateFile'][-1]['data'][pos_in_template]['score'] < cosin_matrix[test_sentence_id][pos_in_template]:
+                    res['templateFile'][-1]['data'][pos_in_template]['matchId'] = test_sentence_id
+                    res['templateFile'][-1]['data'][pos_in_template]['score'] = cosin_matrix[test_sentence_id][pos_in_template]
+                else:
+                    continue
+            # If matchId of templateFile sentences is None -> add new value
+            else: 
+                res['templateFile'][-1]['data'][pos_in_template]['matchId'] = test_sentence_id
+                res['templateFile'][-1]['data'][pos_in_template]['score'] = cosin_matrix[test_sentence_id][pos_in_template]
 
     return res
 
