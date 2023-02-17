@@ -91,8 +91,7 @@ def getContentOnWebsite_save2txt(url):
                 'User-Agent': random_user_agent
               }
 
-    
-    text = str
+    text = '' # ???
     # http_respone 200 means OK status
     #socket.setdefaulttimeout(5)
     try:
@@ -100,17 +99,24 @@ def getContentOnWebsite_save2txt(url):
         resp = requests.get(url, headers=headers)
       except:
         return None
-      if resp.status_code ==200:
+      if resp.status_code == 200:
+        print('ABC')
         soup = BeautifulSoup(resp.text,'lxml')
         text = soup.body.get_text(' ', strip=True)
+        print(text)
     except Exception as E:
-        text=None
-    if text!=None:
-      savePath=DOWNLOAD_PATH+(str(url).split('//')[-1]).replace('/','_')+'.txt'
+        return None
+    if text!= '':
+      print('-------------------HERE----------------------')
+      print(text)
+      savePath=DOWNLOAD_PATH+(str(url).split('//')[-1]).replace('/','_').replace('.','_').replace('\\','_').replace(':','_').replace('*','_').replace('?','_').replace('<','_').replace('>','_').replace('|','_')+'.txt'
       txt_file=open(savePath,'w')
       txt_file.write(text)
       txt_file.close()
+      print(url)
       return savePath,url
+    else:
+      print('loi')
 
 def download_pdf(url):
   filename=urllib.parse.unquote(str(url).split('/')[-1])
@@ -123,7 +129,7 @@ def download_pdf(url):
   except Exception as E:
     pass
   
-def search_downloadPDF(sents, langOfText, num_of_keyword=3, num_of_result=10, is_cross=1, timeout=2):      #input list các câu
+def search_downloadPDF(sents, langOfText, num_of_keyword=3, num_of_result=10, is_cross=1, timeout=5):      #input list các câu
   downloaded_file_path=[]
   website_content_file=[]
   output=[]
@@ -157,6 +163,7 @@ def search_downloadPDF(sents, langOfText, num_of_keyword=3, num_of_result=10, is
         try: 
             with concurrent.futures.ThreadPoolExecutor() as executor:
                 downloaded_file_path=executor.map(download_pdf, listLinks, timeout=timeout)
+                print(downloaded_file_path)
         except Exception as E:
             print(E)
             pass

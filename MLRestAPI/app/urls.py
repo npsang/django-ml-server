@@ -6,6 +6,7 @@ from . import views
 router = routers.DefaultRouter()
 router.register("users", views.UserViewSet, "user")
 router.register("documents", views.DocumentViewSet, "document")
+router.register("listdocuments", views.ListDocumentViewSet, "listdocument")
 router.register("mlmodels", views.MLModelViewSet, "mlmodel")
 router.register('sentences', views.SentenceViewSet, 'sentence')
 

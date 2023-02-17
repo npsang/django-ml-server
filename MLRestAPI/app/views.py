@@ -5,7 +5,7 @@ from rest_framework.renderers import JSONRenderer
 from django.http import HttpResponse
 import pickle
 import base64
-
+import time
 from .models import (
     User,
     Document,
@@ -15,6 +15,7 @@ from .models import (
 from .serializers import (
     UserSerializer,
     DocumentSerializer,
+    ListDocumentSerializer,
     SentenceSerializer,
     MLModelSerializer
 )
@@ -131,11 +132,13 @@ class MLModelViewSet(viewsets.ViewSet, generics.ListAPIView, generics.RetrieveAP
         return [permissions.AllowAny()]
 
 
-class DocumentViewSet(viewsets.ViewSet, generics.CreateAPIView,
-                        generics.RetrieveAPIView, generics.ListAPIView):
+class ListDocumentViewSet(viewsets.ViewSet, generics.ListAPIView):
+    queryset = Document.objects.filter(active=True)
+    serializer_class = ListDocumentSerializer
+
+class DocumentViewSet(viewsets.ViewSet, generics.RetrieveAPIView):
     queryset = Document.objects.filter(active=True)
     serializer_class = DocumentSerializer
-
 
 class SentenceViewSet(viewsets.ViewSet, generics.RetrieveAPIView, generics.ListAPIView):
     queryset = Sentence.objects.filter(active=True)
@@ -337,15 +340,15 @@ def _compute_create_document_object(req, pipelines):
         user=User.objects.get_or_create(username=req['user'])[0]
     )
     if _create:
-        _test_sentences, _test_sentences_tokenized, _test_language, _test_embeddings = __after_created_new_document_object(
-            _test_document, pipelines)
+        _success, _test_sentences_id, _test_sentences, _, _test_language, _test_embeddings = \
+            __after_created_new_document_object(_test_document, pipelines)
     else:
-        _test_sentences, _test_sentences_tokenized, _test_language, _test_embeddings = __get_document_object_data(_test_document)
+        _success, _test_sentences_id, _test_sentences, _, _test_language, _test_embeddings = \
+            __get_document_object_data(_test_document)
 
-    # HANDLE EMPTY TEXT FILE
-    if _test_sentences is None:
+    if _success == False:
+        print('Error when process document data')
         return res
-
     # add test respone
     res['testFile'].append(
         {
@@ -354,11 +357,11 @@ def _compute_create_document_object(req, pipelines):
             'url': None,
             'data': [
                 {
-                    'id': sentence.id,
-                    'content': sentence.content,
+                    'id': _id,
+                    'content': _content,
                     'matchId': None,
                     'score': []
-                } for sentence in Sentence.objects.filter(document_id=_test_document.id)
+                } for _id, _content  in zip(_test_sentences_id, _test_sentences)
             ]
         }
     )
@@ -379,14 +382,27 @@ def _compute_create_document_object(req, pipelines):
         )
         if _is_create:
             print('Creat new object: Processing Data')
-            __sentences, __sentences_tokenized, __language, __embeddings = __after_created_new_document_object(
+            __success, __sentences_id, __sentences, __sentences_tokenized, __language, __embeddings = __after_created_new_document_object(
                 _template_document, pipelines)
         else:
             print('Getting processed data from object')
-            __sentences, __sentences_tokenized, __language, __embeddings = __get_document_object_data(_template_document)
+            __success, __sentences_id, __sentences, __sentences_tokenized, __language, __embeddings = __get_document_object_data(_template_document)
 
-        # HANDLE EMPTY TEXT FILE
-        if __sentences is None:
+        if __success == False:
+            res['templateFile'].append(
+                {
+                    'id': _template_document.id,
+                    'name': _template_document.name,
+                    'score': None,
+                    'url': None,
+                    'data': [
+                        {
+                            'id': None,
+                            'content': None
+                        }
+                    ]
+                }
+            )
             continue
         # DO COMPUTE
         # compute shit
@@ -408,9 +424,11 @@ def _compute_create_document_object(req, pipelines):
         print(f'Computing: ... {_template_document.name}', end=' ')
         _pipeline = pipelines[_type]
         print(f'pipeline: {_pipeline}')
+        print(_test_embeddings)
         _test_embedding = next(item for item in _test_embeddings if item['type'] == _type)['embedding']
+        print(__embeddings)
         _embedding = next(item for item in __embeddings if item['type'] == _type)['embedding']
-
+        print('--------------------------')
         score, cosin_matrix, positions = _pipeline.compute(_test_embedding, _embedding)
         print('Done!!')
         print(f'score: {score} - len(position): {len(positions)}')
@@ -424,36 +442,24 @@ def _compute_create_document_object(req, pipelines):
                 'url': None,
                 'data': [
                     {
-                        'id': sentence.id,
-                        'content': sentence.content,
-                        'matchId': None,
-                        'score': None
-                    } for sentence in Sentence.objects.filter(document_id=_template_document.id)
+                        'id': _id,
+                        'content': _content
+                    } for _id, _content  in zip(__sentences_id, __sentences)
                 ]
             }
         )
         _test_file = res['testFile'][0]['data']
         for test_sentence_id, pos_in_template in enumerate(positions):
+            print(f'{test_sentence_id} - {pos_in_template}')
             # print(f'Processing at sentence_{test_sentence_id} of testFile - Pair with sentence_{pos_in_template} of templateFile')
             # GET testFile from res
             _test_file[test_sentence_id]['matchId'] = test_sentence_id
             _test_file[test_sentence_id]['score'].append({
                 'document_id': _template_document.id,
-                'score': cosin_matrix[test_sentence_id][pos_in_template]})
-            # If matchId of templateFile sentences is not None -> compare with new value if less, assign value to new value
-            # print(res['templateFile'][-1]['data'][pos_in_template], f"matchId is not None{res['templateFile'][-1]['data'][pos_in_template]['matchId'] is not None}")
-            # res_template_data = res['templateFile'][-1]['data'][pos_in_template]
-            # print(res_template_data,  f"matchId is not None{res_template_data[pos_in_template]['matchId'] is not None}")
-            if res['templateFile'][-1]['data'][pos_in_template]['matchId']:
-                if res['templateFile'][-1]['data'][pos_in_template]['score'] < cosin_matrix[test_sentence_id][pos_in_template]:
-                    res['templateFile'][-1]['data'][pos_in_template]['matchId'] = test_sentence_id
-                    res['templateFile'][-1]['data'][pos_in_template]['score'] = cosin_matrix[test_sentence_id][pos_in_template]
-                else:
-                    continue
-            # If matchId of templateFile sentences is None -> add new value
-            else: 
-                res['templateFile'][-1]['data'][pos_in_template]['matchId'] = test_sentence_id
-                res['templateFile'][-1]['data'][pos_in_template]['score'] = cosin_matrix[test_sentence_id][pos_in_template]
+                'score': cosin_matrix[test_sentence_id][pos_in_template],
+                'sentence_id': __sentences_id[pos_in_template]
+                }
+            )
     return res
 
 def _search_on_internet(req, pipelines):
@@ -500,121 +506,144 @@ def _search_on_internet(req, pipelines):
         user=User.objects.get_or_create(username=req['user'])[0]
     )
     if _create:
-        _test_sentences, _test_sentences_tokenized, _test_language, _test_embeddings = __after_created_new_document_object(
-            _test_document, pipelines)
+        _success, _test_sentences_id, _test_sentences, _test_sentences_tokenized, _test_language, _test_embeddings = \
+            __after_created_new_document_object(_test_document, pipelines)
     else:
-        _test_sentences, _test_sentences_tokenized, _test_language, _test_embeddings = __get_document_object_data(_test_document)
+        _success, _test_sentences_id, _test_sentences, _test_sentences_tokenized, _test_language, _test_embeddings = \
+            __get_document_object_data(_test_document)
 
-    # HANDLE EMPTY TEXT FILE
-    if _test_sentences is None:
+    if _success == False:
+        print('Error when process document data')
         return res
+
     # add test respone
     res['testFile'].append(
         {
             'id': _test_document.id,
             'name': _test_document.name,
+            'url': None,
             'data': [
                 {
-                    'id': sentence.id,
-                    'content': sentence.content,
+                    'id': _id,
+                    'content': _content,
                     'matchId': None,
-                    'url': None,
                     'score': []
-                } for sentence in Sentence.objects.filter(document_id=_test_document.id)
+                } for _id, _content  in zip(_test_sentences_id, _test_sentences)
             ]
         }
     )
 
     # Preparing template
     # Use sentences tokenize to make search query and search on internet using Google Search API
-    _template_path, _template_url = search_downloadPDF(
-        sents=_test_sentences_tokenized,
-        langOfText=_test_language,
-        num_of_keyword=req['number_of_keyword'],
-        num_of_result=req['number_of_result'],
-    )
-    for _path, _url in zip(_template_path, _template_url):
-        _template_file_matchID_score = {}
-        _pipeline = None
-        _test_embedding = None
-        _embedding = None
-
-        
-        _template_document, _is_create = Document.objects.get_or_create(
-            path=_path,
-            name=_path.split('/')[-1],
-            user=User.objects.get_or_create(username=req['user'])[0],
-            url=_url
+    try:
+        _template_path, _template_url = search_downloadPDF(
+            sents=_test_sentences_tokenized,
+            langOfText=_test_language,
+            num_of_keyword=req['number_of_keyword'],
+            num_of_result=req['number_of_result'],
         )
-        if _is_create:
-            __sentences, __sentences_tokenized, __language, __embeddings = __after_created_new_document_object(
-                _template_document, pipelines)
-        else:
-            __sentences, __sentences_tokenized, __language, __embeddings = __get_document_object_data(_template_document)
 
-        # HANDLE EMPTY TEXT FILE
-        if __sentences is None:
-            continue
-        # DO COMPUTE
-        # compute shit
-        if _test_language == 'vi' and __language == 'vi':
-            """
-            test_language == template_language == 'vi'. Using vietnamese compute similarity pipeline
-            Using vietnamese embedding
-            """
-            _type = 'vi'
-        else:
-            """
-            different language files. Using cross language similarity pipeline
-            Using cross embedding
-            """            
-            _type = 'cross'
+        print(_template_path, _template_url)
 
-        _pipeline = pipelines[_type]
-        _test_embedding = next(item for item in _test_embeddings if item['type'] == _type)['embedding']
-        _embedding = next(item for item in __embeddings if item['type'] == _type)['embedding']
-        score, cosin_matrix, positions = _pipeline.compute(_test_embedding, _embedding)
+        count = 0
+        for _path, _url in zip(_template_path, _template_url):
 
-        # Return respone
-        _test_file = res['testFile'][0]['data']
-        res['templateFile'].append(
-            {
-                'id': _template_document.id,
-                'name': _template_document.name,
-                'score': score,
-                'url': _url,
-                'data': [
+            count += 1
+            print(f'\n---------------------------------\nProcessing {_path}, total: {count}//{len(_template_path)}')
+            print(_path, '\n', _url)
+            print(f'\n-----------------------------------')
+
+            _pipeline = None
+            _test_embedding = None
+            _embedding = None
+
+            
+            _template_document, _is_create = Document.objects.get_or_create(
+                path=_path,
+                name=_path.split('/')[-1],
+                user=User.objects.get_or_create(username=req['user'])[0],
+                url=_url
+            )
+            get_or_create_time = time.time()
+            if _is_create:
+                print('Creat new object: Processing Data')
+                __success, __sentences_id, __sentences, __sentences_tokenized, __language, __embeddings = __after_created_new_document_object(
+                    _template_document, pipelines)
+            else:
+                print('Getting processed data from object')
+                __success, __sentences_id, __sentences, __sentences_tokenized, __language, __embeddings = __get_document_object_data(_template_document)
+
+            print('Time:',time.time() - get_or_create_time)
+
+            if __success == False:
+                res['templateFile'].append(
                     {
-                        'id': sentence.id,
-                        'content': sentence.content,
-                        'matchId': None,
-                        'score': None
-                    } for sentence in Sentence.objects.filter(document_id=_template_document.id)
-                ]
-            }
-        )
-        _test_file = res['testFile'][0]['data']
-        for test_sentence_id, pos_in_template in enumerate(positions):
-            # print(f'Processing at sentence_{test_sentence_id} of testFile - Pair with sentence_{pos_in_template} of templateFile')
-            # GET testFile from res
-            _test_file[test_sentence_id]['matchId'] = test_sentence_id
-            _test_file[test_sentence_id]['score'].append({
-                'document_id': _template_document.id,
-                'score': cosin_matrix[test_sentence_id][pos_in_template]})
-            # If matchId of templateFile sentences is not None -> compare with new value if less, assign value to new value
-            # print(res['templateFile'][-1]['data'][pos_in_template], f"matchId is not None{res['templateFile'][-1]['data'][pos_in_template]['matchId'] is not None}")
-            # res_template_data = res['templateFile'][-1]['data'][pos_in_template]
-            # print(res_template_data,  f"matchId is not None{res_template_data[pos_in_template]['matchId'] is not None}")
-            if res['templateFile'][-1]['data'][pos_in_template]['matchId']:
-                if res['templateFile'][-1]['data'][pos_in_template]['score'] < cosin_matrix[test_sentence_id][pos_in_template]:
-                    res['templateFile'][-1]['data'][pos_in_template]['matchId'] = test_sentence_id
-                    res['templateFile'][-1]['data'][pos_in_template]['score'] = cosin_matrix[test_sentence_id][pos_in_template]
-                else:
-                    continue
-            # If matchId of templateFile sentences is None -> add new value
-            else: 
-                res['templateFile'][-1]['data'][pos_in_template]['matchId'] = test_sentence_id
-                res['templateFile'][-1]['data'][pos_in_template]['score'] = cosin_matrix[test_sentence_id][pos_in_template]
+                        'id': _template_document.id,
+                        'name': _template_document.name,
+                        'score': None,
+                        'url': None,
+                        'data': [
+                            {
+                                'id': None,
+                                'content': None
+                            }
+                        ]
+                    }
+                )
+                continue
+            # DO COMPUTE
+            # compute shit
+            if _test_language == 'vi' and __language == 'vi':
+                """
+                test_language == template_language == 'vi'. Using vietnamese compute similarity pipeline
+                Using vietnamese embedding
+                """
+                _type = 'vi'
+            else:
+                """
+                different language files. Using cross language similarity pipeline
+                Using cross embedding
+                """            
+                _type = 'cross'
+
+            print(f'Computing: ... {_template_document.name}', end=' ')
+            _pipeline = pipelines[_type]
+            print(f'pipeline: {_pipeline}')
+            _pipeline = pipelines[_type]
+            _test_embedding = next(item for item in _test_embeddings if item['type'] == _type)['embedding']
+            _embedding = next(item for item in __embeddings if item['type'] == _type)['embedding']
+            score, cosin_matrix, positions = _pipeline.compute(_test_embedding, _embedding)
+            print('Done!!')
+            print(f'score: {score} - len(position): {len(positions)}')
+            print('Return respone...')
+            # Return respone
+            res['templateFile'].append(
+                {
+                    'id': _template_document.id,
+                    'name': _template_document.name,
+                    'score': score,
+                    'url': None,
+                    'data': [
+                        {
+                            'id': _id,
+                            'content': _content
+                        } for _id, _content  in zip(__sentences_id, __sentences)
+                    ]
+                }
+            )
+            _test_file = res['testFile'][0]['data']
+            for test_sentence_id, pos_in_template in enumerate(positions):
+                # print(f'Processing at sentence_{test_sentence_id} of testFile - Pair with sentence_{pos_in_template} of templateFile')
+                # GET testFile from res
+                _test_file[test_sentence_id]['matchId'] = test_sentence_id
+                _test_file[test_sentence_id]['score'].append({
+                    'document_id': _template_document.id,
+                    'score': cosin_matrix[test_sentence_id][pos_in_template],
+                    'sentence_id': __sentences_id[pos_in_template]
+                    }
+                )
+    except Exception as e:
+        print('Try to Search and Download file', e)
 
     return res
 
@@ -624,12 +653,13 @@ def __after_created_new_document_object(document, pipelines):
     this function will preprocess new data and store to this new document object
     and return good things
     """
-    _sentences, _sentences_tokenized, _lang, _embeddings = None, None, None, None
+    _success = False
+    _sentences_id, _sentences, _sentences_tokenized, _lang, _embeddings = None, None, None, None, None
     # READ DOCUMENT AND DO SENTENCES TOKENIZE
-    _text, _lang = read_file(document.path, get_language=True)
-    if _text:
+    try:
+        _text, _lang = read_file(document.path, get_language=True)
         document.language = _lang
-        _sentences, _sentences_tokenized  = __create_sentence_object_by_processing_document(document, _text, _lang, pipelines)
+        _sentences_id, _sentences, _sentences_tokenized  = __create_sentence_object_by_processing_document(document, _text, _lang, pipelines)
         _embeddings = []
         # If language='vi' encode two times, once for vietnamese encode, once for cross encode
             # ENCODE THE DOCUMENT sentences_tokenized, language, pipelines)
@@ -650,42 +680,46 @@ def __after_created_new_document_object(document, pipelines):
             }
         )
         document.save()
-        return _sentences, _sentences_tokenized, _lang, _embeddings
-    return _sentences, _sentences_tokenized, _lang, _embeddings
+        _success = True
+    except Exception as e:
+        print('__after_created_new_document_object', e)
+    # READ DOCUMENT AND DO SENTENCES TOKENIZE
+    return _success, _sentences_id, _sentences, _sentences_tokenized, _lang, _embeddings
 
 
 def __get_document_object_data(document):
-    _sentences, _sentences_tokenized, _lang, _embeddings = None, None, None, None
+    _success = False
+    _sentences_id, _sentences, _sentences_tokenized, _lang, _embeddings = None, None, None, None, None
     try:
         _sentence_objects = [sentence for sentence in Sentence.objects.filter(document_id=document.id)]
-        if len(_sentence_objects) > 0 :
-            _sentences = [sentence.content for sentence in _sentence_objects]
-            _sentences_tokenized = [sentence.content_tokenized for sentence in _sentence_objects]
-            _lang = document.language
-
-            _embeddings = []
-            if document.is_vi_encode:
-                _vi_np_bytes = base64.b64decode(document.vi_encode)
-                _embedding_vi = pickle.loads(_vi_np_bytes)
-                _embeddings.append(
-                    {
-                        'type': 'vi',
-                        'embedding': _embedding_vi,
-                    }
-                )
-
-            _cross_np_bytes = base64.b64decode(document.cross_encode)
-            _embedding_cross = pickle.loads(_cross_np_bytes)
+        _sentences = [sentence.content for sentence in _sentence_objects]
+        _sentences_tokenized = [sentence.content_tokenized for sentence in _sentence_objects]
+        _lang = document.language
+        _sentences_id = [sentence.id for sentence in _sentence_objects]
+        _embeddings = []
+        if document.is_vi_encode:
+            _vi_np_bytes = base64.b64decode(document.vi_encode)
+            _embedding_vi = pickle.loads(_vi_np_bytes)
             _embeddings.append(
                 {
-                    'type': 'cross',
-                    'embedding': _embedding_cross,
+                    'type': 'vi',
+                    'embedding': _embedding_vi,
                 }
             )
 
+        _cross_np_bytes = base64.b64decode(document.cross_encode)
+        _embedding_cross = pickle.loads(_cross_np_bytes)
+        _embeddings.append(
+            {
+                'type': 'cross',
+                'embedding': _embedding_cross,
+            }
+        )
+        print('Here', _embeddings)
+        _success = True
     except Exception as e:
         print(f'Get : {e}')
-    return _sentences, _sentences_tokenized, _lang, _embeddings
+    return _success, _sentences_id, _sentences, _sentences_tokenized, _lang, _embeddings
 
 def __create_sentence_object_by_processing_document(document, text, language, pipelines):
     """"
@@ -699,14 +733,17 @@ def __create_sentence_object_by_processing_document(document, text, language, pi
         _sentences (list): list sentence which had sentence tokenized by pipeline
         _sentences_tokenized (list): list sentence which had sentence tokenized and word tokenized by pipeline
     """
+    _sentences_id, _sentences, _sentences_tokenized = None, None, None
     _pipeline = None
     if language == 'vi':
         _pipeline = pipelines['vi']
     elif language == 'en':
         _pipeline = pipelines['cross']
-    if _pipeline:
-        try:
+    print(_pipeline)
+    try:
+        if _pipeline is not None:
             _sentences, _sentences_tokenized = _pipeline.preprocessing(text)
+            _sentences_id = []
             ## CREATE SENTENCE OBJECT
             for _sentence, _sentence_tokenized in zip(_sentences, _sentences_tokenized):
                 sentence_serializer = SentenceSerializer(
@@ -718,14 +755,17 @@ def __create_sentence_object_by_processing_document(document, text, language, pi
                     }
                 )
                 if SentenceSerializer.is_valid(sentence_serializer):
-                    sentence_serializer.save()
+                    _id = sentence_serializer.save()
+                    _sentences_id.append(_id)
                 else:
                     print(sentence_serializer.errors)
-            return _sentences, _sentences_tokenized
-        except Exception as e:
-            print(f'Create sentence object by processing document: {document.name}')
-        
-    return None
+            print(_sentences_id)
+        else:
+            print('BUG: _pipeline not found')
+    except Exception as e:
+        print(f'Create sentence object by processing document: {document.name}')
+    print(_sentences_id, _sentences, _sentences_tokenized)
+    return _sentences_id, _sentences, _sentences_tokenized
 
 def __processand_store_embedding(document, sentences_tokenized, language, pipelines):
     """
