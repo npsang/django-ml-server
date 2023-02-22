@@ -124,6 +124,16 @@ class ComputeCreateViewSet(APIView):
         return Response(res,status=status.HTTP_201_CREATED)
         # return HttpResponse(res,status=status.HTTP_201_CREATED)
 
+# Many vs Many
+class ComputesViewSet(APIView):
+    
+    def post(self, request):
+        res = _compute_many_with_many(
+            req=request.data,
+            pipelines=registry.models
+        )
+        return Response(res)
+
 class MLModelViewSet(viewsets.ViewSet, generics.ListAPIView, generics.RetrieveAPIView):
     queryset = MLModel.objects.filter(active=True)
     serializer_class = MLModelSerializer
@@ -156,6 +166,82 @@ class MLModelWSGI(APIView):
     def get(self, request):
         return Response('hello world')
         # return Response(str(registry.model), status=status.HTTP_200_OK)
+
+# Many vs Many
+def _compute_many_with_many(req, pipelines):
+    # Get data from request
+    _test_files_path = req['testFile']
+    _templates_files_path = req['templateFile']
+    _user_name = req['user']
+    _res = {'testFile': [], 'templateFile': []}
+    # test_files and template_files must be type of list
+    _templates_data_to_compute = []
+    for _template_file_path in _templates_files_path:
+        _template_success, _template_document_id, _template_document_name, _template_sentences_id, _template_sentences, \
+            _template_tokenized_sentences, _template_language, _template_embeddings = None, None, None, None, None, None, None, None
+        # prepare template
+        _template_success, _template_document_id, _template_document_name, _template_sentences_id, _template_sentences, \
+            _template_tokenized_sentences, _template_language, _template_embeddings = __prepare_data(_template_file_path, _user_name, pipelines)
+        if not _template_success:
+            print(f'Error when preprare template file: {_template_file_path}')
+            continue
+        else:
+            _templates_data_to_compute.append(
+                {
+                    'language': _template_language,
+                    'embeddings': _template_embeddings,
+                    'document_id': _template_document_id,
+                    'sentences_id': _template_sentences_id
+                }
+            )
+
+        # make respone
+        __do_template_respone(_res, _template_success, _template_document_id, _template_document_name,
+                            _template_sentences_id, _template_sentences)
+
+    
+    for _test_file_path in _test_files_path:
+        _test_success, _test_document_id, _test_document_name, _test_sentences_id, _test_sentences, \
+            _test_tokenized_sentences, _test_language, _test_embeddings, _1many_result = None, None, None, None, None, None, None, None, None
+        # Prepare test
+        _test_success, _test_document_id, _test_document_name, _test_sentences_id, _test_sentences, \
+            _test_tokenized_sentences, _test_language, _test_embeddings = __prepare_data(_test_file_path, _user_name, pipelines)
+        if not _test_success:
+            print(f'Error when preprare test file: {_test_file_path}')
+            continue
+        # compute stuff
+        for _template_data in _templates_data_to_compute:
+            _type, __test_embedding, __template_embedding, __template_language, __template_embeddings,\
+                __template_document_id, __template_sentences_id, _11_result = None, None, None, None, None, None, None, None
+            
+            __template_language = _template_data['language']
+            __template_embeddings = _template_data['embeddings']
+            __template_document_id = _template_data['document_id']
+            __template_sentences_id = _template_data['sentences_id']
+
+            if _test_language == 'vi' and __template_language == 'vi':
+                _type = 'vi'
+            elif _test_language == 'en' and __template_language == 'en':
+                _type = 'en'
+            else:
+                _type = 'cross'
+            
+            _pipeline = pipelines[_type]
+            __test_embedding = next(item for item in _test_embeddings if item['type'] == _type)['embedding']
+            __template_embedding = next(item for item in __template_embeddings if item['type'] == _type)['embedding']
+            _score, _cosin_matrix, _positisions = _pipeline.compute(
+                doc_a=__test_embedding,
+                doc_b=__template_embedding
+            )
+            _11_result = __make_res_compute_score(_score, _cosin_matrix, _positisions, __template_document_id, __template_sentences_id)
+            if not _1many_result:
+                _1many_result = [[item] for item in _11_result]
+            else:
+                _1many_result = [[*_1many_result[i], item] for i, item in enumerate(_11_result)]
+        # make respone
+        __do_test_respone(_res, _test_success, _test_document_id, _test_document_name, _test_sentences_id, _test_sentences, _1many_result)
+
+    return _res
 
 # 1 vs 1
 def _compute(test_path, templates_path, mlmodel_id=1, is_cross=0):
@@ -426,7 +512,6 @@ def _compute_create_document_object(req, pipelines):
         print(f'pipeline: {_pipeline}')
         print(_test_embeddings)
         _test_embedding = next(item for item in _test_embeddings if item['type'] == _type)['embedding']
-        print(__embeddings)
         _embedding = next(item for item in __embeddings if item['type'] == _type)['embedding']
         print('--------------------------')
         score, cosin_matrix, positions = _pipeline.compute(_test_embedding, _embedding)
@@ -462,6 +547,7 @@ def _compute_create_document_object(req, pipelines):
             )
     return res
 
+# Search on internet
 def _search_on_internet(req, pipelines):
     """"
     res = {
@@ -647,6 +733,82 @@ def _search_on_internet(req, pipelines):
 
     return res
 
+# inner function
+def __make_res_compute_score(score, cosin_matrix, positisions, template_document_id, template_sentences_id):
+    try:
+        _res_score = []
+        for test_sentence_id, pos_in_template in enumerate(positisions):
+            _res_score.append(
+                {
+                            'document_id': template_document_id,
+                            'score': cosin_matrix[test_sentence_id][pos_in_template],
+                            'sentence_id': template_sentences_id[pos_in_template]
+                }
+            )
+        return _res_score
+    except Exception as e:
+        print(f'Err: __do_template_respone(). Maybe caused of {e}')
+
+def __do_template_respone(res, success, document_id, document_name, sentences_id, sentences):
+    if not success:
+        return
+    try:
+        res['templateFile'].append(
+            {
+                'id': document_id,
+                'name': document_name,
+                'url': None,
+                'data': [
+                    {
+                        'id': _id,
+                        'content': _content
+                    } for _id, _content  in zip(sentences_id, sentences)
+                ]
+            }
+        )
+    except Exception as e:
+        print(f'Err: __do_template_respone(). Maybe caused of {e}')
+
+def __do_test_respone(res, success, document_id, document_name, sentences_id, sentences, scores):
+    if not success:
+        return
+    try:
+        res['testFile'].append(
+            {
+                'id': document_id,
+                'name': document_name,
+                'url': None,
+                'data': [
+                    {
+                        'id': _id,
+                        'content': _content,
+                        'matchId': _i,
+                        'score': score
+                    } for _i, (_id, _content, score) in enumerate(zip(sentences_id, sentences, scores))
+                ]
+            }
+        )
+    except Exception as e:
+        print(f'Error at __do_test_respone. Maybe cause of: {e}')
+
+
+def __prepare_data(path, user_name, pipelines):
+    _path = path
+    _name = _path.split('/')[-1]
+    _document, _create = Document.objects.get_or_create(
+        path=_path,
+        name=_name,
+        user=User.objects.get_or_create(username=user_name)[0].id
+    )
+    if _create:
+        _success, _sentences_id, _sentences, _tokenized_sentences, _language, _embeddings = \
+            __after_created_new_document_object(_document, pipelines)
+    else:
+        _success, _sentences_id, _sentences, _tokenized_sentences, _language, _embeddings = \
+            __get_document_object_data(_document)
+    
+    return _success, _document.id, _document.name, _sentences_id, _sentences, _tokenized_sentences, _language, _embeddings
+
 def __after_created_new_document_object(document, pipelines):
     """
     after get_or_create if create == true that method will create a new document object
@@ -686,7 +848,6 @@ def __after_created_new_document_object(document, pipelines):
     # READ DOCUMENT AND DO SENTENCES TOKENIZE
     return _success, _sentences_id, _sentences, _sentences_tokenized, _lang, _embeddings
 
-
 def __get_document_object_data(document):
     _success = False
     _sentences_id, _sentences, _sentences_tokenized, _lang, _embeddings = None, None, None, None, None
@@ -715,7 +876,6 @@ def __get_document_object_data(document):
                 'embedding': _embedding_cross,
             }
         )
-        print('Here', _embeddings)
         _success = True
     except Exception as e:
         print(f'Get : {e}')
@@ -759,12 +919,10 @@ def __create_sentence_object_by_processing_document(document, text, language, pi
                     _sentences_id.append(_id)
                 else:
                     print(sentence_serializer.errors)
-            print(_sentences_id)
         else:
             print('BUG: _pipeline not found')
     except Exception as e:
         print(f'Create sentence object by processing document: {document.name}')
-    print(_sentences_id, _sentences, _sentences_tokenized)
     return _sentences_id, _sentences, _sentences_tokenized
 
 def __processand_store_embedding(document, sentences_tokenized, language, pipelines):
@@ -802,3 +960,5 @@ def __processand_store_embedding(document, sentences_tokenized, language, pipeli
     else:
         print(f'__processand_store_embedding: invalid language {language}')
         return None
+
+# def __make_dict()

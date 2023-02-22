@@ -94,23 +94,20 @@ def getContentOnWebsite_save2txt(url):
     text = '' # ???
     # http_respone 200 means OK status
     #socket.setdefaulttimeout(5)
-    try:
-      try:
-        resp = requests.get(url, headers=headers)
-      except:
-        return None
+    try:    
+      resp = requests.get(url, headers=headers)
       if resp.status_code == 200:
         print('ABC')
         soup = BeautifulSoup(resp.text,'lxml')
         text = soup.body.get_text(' ', strip=True)
-        print(text)
+        #print(text)
     except Exception as E:
         return None
     if text!= '':
       print('-------------------HERE----------------------')
-      print(text)
+      #print(text)
       savePath=DOWNLOAD_PATH+(str(url).split('//')[-1]).replace('/','_').replace('.','_').replace('\\','_').replace(':','_').replace('*','_').replace('?','_').replace('<','_').replace('>','_').replace('|','_')+'.txt'
-      txt_file=open(savePath,'w')
+      txt_file=open(savePath,'w',encoding='utf-8')
       txt_file.write(text)
       txt_file.close()
       print(url)
@@ -156,10 +153,11 @@ def search_downloadPDF(sents, langOfText, num_of_keyword=3, num_of_result=10, is
         time.sleep(2)
         listLinks_1_docx = search(query_docx, lang='vi', num_results = num_of_result)
         time.sleep(2)
-        listLinks_2_pdf = search(translator.translate_vi2en(query_pdf), lang='en', num_results = num_of_result)
+        #listLinks_2_pdf = search(translator.translate_vi2en(query_pdf), lang='en', num_results = num_of_result)
         time.sleep(2)
-        listLinks_2_docx = search(translator.translate_vi2en(query_docx), lang='en', num_results = num_of_result)
-        listLinks=[*listLinks_1_pdf,*listLinks_1_docx,*listLinks_2_pdf,*listLinks_2_docx]
+        #listLinks_2_docx = search(translator.translate_vi2en(query_docx), lang='en', num_results = num_of_result)
+        #listLinks=[*listLinks_1_pdf,*listLinks_1_docx,*listLinks_2_pdf,*listLinks_2_docx]
+        listLinks=[*listLinks_1_pdf,*listLinks_1_docx]
         try: 
             with concurrent.futures.ThreadPoolExecutor() as executor:
                 downloaded_file_path=executor.map(download_pdf, listLinks, timeout=timeout)
@@ -192,10 +190,11 @@ def search_downloadPDF(sents, langOfText, num_of_keyword=3, num_of_result=10, is
         time.sleep(2)
         listLinks_1_docx = search(query_docx, lang='vi', num_results = num_of_result)
         time.sleep(2)
-        listLinks_2_pdf = search(translator.translate_en2vi(query_pdf), lang='en', num_results = num_of_result)
+        #listLinks_2_pdf = search(translator.translate_en2vi(query_pdf), lang='en', num_results = num_of_result)
         time.sleep(2)
-        listLinks_2_docx = search(translator.translate_en2vi(query_docx), lang='en', num_results = num_of_result)
-        listLinks=[*listLinks_1_pdf,*listLinks_1_docx,*listLinks_2_pdf,*listLinks_2_docx]
+        #listLinks_2_docx = search(translator.translate_en2vi(query_docx), lang='en', num_results = num_of_result)
+        #listLinks=[*listLinks_1_pdf,*listLinks_1_docx,*listLinks_2_pdf,*listLinks_2_docx]
+        listLinks=[*listLinks_1_pdf,*listLinks_1_docx]
         try: 
             with concurrent.futures.ThreadPoolExecutor() as executor:
                 downloaded_file_path=executor.map(download_pdf, listLinks, timeout=timeout)
@@ -236,9 +235,10 @@ def search_downloadPDF(sents, langOfText, num_of_keyword=3, num_of_result=10, is
     savepath_output.append(i[0])
     url_output.append(i[1])
   return savepath_output,url_output 
+'''
+x=['Bạn đang tìm kiếm công cụ giúp bạn kiểm tra xem bài viết của mình hay của bạn bè có phải bị đánh giá là đạo văn hay không?',
+    'Hãy theo dõi bài viết để biết thêm 7 phần mềm, web kiểm tra đạo văn miễn phí và chính xác nhất.',]
 
-# x=['Bạn đang tìm kiếm công cụ giúp bạn kiểm tra xem bài viết của mình hay của bạn bè có phải bị đánh giá là đạo văn hay không?',
-#    'Hãy theo dõi bài viết để biết thêm 7 phần mềm, web kiểm tra đạo văn miễn phí và chính xác nhất.',]
-
-# ex=search_downloadPDF(x,'vi',num_of_keyword=2,num_of_result=3,is_cross=1,timeout=5)
-# print(ex)
+ex=search_downloadPDF(x,'vi',num_of_keyword=2,num_of_result=3,is_cross=1,timeout=5)
+print(ex)
+'''
