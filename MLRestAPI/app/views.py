@@ -193,7 +193,8 @@ def _compute_many_with_many(req, pipelines):
                     'language': _template_language,
                     'embeddings': _template_embeddings,
                     'document_id': _template_document_id,
-                    'sentences_id': _template_sentences_id
+                    'sentences_id': _template_sentences_id,
+                    'name': _template_document_name
                 }
             )
 
@@ -205,7 +206,7 @@ def _compute_many_with_many(req, pipelines):
     for _test_file_path in _test_files_path:
         _test_success, _test_document_id, _test_document_name, _test_sentences_id, _test_sentences, \
             _test_tokenized_sentences, _test_language, _test_embeddings, _1many_result = None, None, None, None, None, None, None, None, None
-        _templates_id, _templates_score, _templates_quantity, _compute_type = [], [], [], []
+        _templates_id, _templates_score, _templates_quantity, _compute_type, _templates_name = [], [], [], [], []
         # Prepare test
         _test_success, _test_document_id, _test_document_name, _test_sentences_id, _test_sentences, \
             _test_tokenized_sentences, _test_language, _test_embeddings = __prepare_data(_test_file_path, _user_name, pipelines)
@@ -221,6 +222,7 @@ def _compute_many_with_many(req, pipelines):
             __template_embeddings = _template_data['embeddings']
             __template_document_id = _template_data['document_id']
             __template_sentences_id = _template_data['sentences_id']
+            __template_document_name = _template_data['name']
 
             if _test_language == 'vi' and __template_language == 'vi':
                 _type = 'vi'
@@ -243,13 +245,14 @@ def _compute_many_with_many(req, pipelines):
             _templates_score.append(_score)
             _templates_quantity.append(len([item for item in _11_result if float(item['score']) > threshold]))
             _compute_type.append(_type)
+            _templates_name.append(__template_document_name)
             if not _1many_result:
                 _1many_result = [[item] for item in _11_result]
             else:
                 _1many_result = [[*_1many_result[i], item] for i, item in enumerate(_11_result)]
         # make respone
         __do_test_respone(_res, _test_success, _test_document_id, _test_document_name, _test_sentences_id, _test_sentences, \
-            _1many_result, _templates_id, _templates_score, _templates_quantity, _compute_type)
+            _1many_result, _templates_id, _templates_name, _templates_score, _templates_quantity, _compute_type)
 
     return _res
 
@@ -780,7 +783,7 @@ def __do_template_respone(res, success, document_id, document_name, sentences_id
         print(f'Err: __do_template_respone(). Maybe caused of {e}')
 
 def __do_test_respone(res, success, document_id, document_name, sentences_id, sentences, sentences_score, \
-    templates_id, templates_score, templates_quantity, compute_type):
+    templates_id, templates_name, templates_score, templates_quantity, compute_type):
     if not success:
         return
     try:
@@ -801,10 +804,11 @@ def __do_test_respone(res, success, document_id, document_name, sentences_id, se
                     {
                         'threshold': 0.8,
                         'id': _id,
+                        'name': _name,
                         'score': str(round(_score.item(), 3)),
                         'type': _type,
                         'quantity': _quantity,
-                    } for _id, _score, _quantity, _type in zip(templates_id, templates_score, templates_quantity, compute_type)
+                    } for _id, _name, _score, _quantity, _type in zip(templates_id, templates_name, templates_score, templates_quantity, compute_type)
                 ]
             }
         )
