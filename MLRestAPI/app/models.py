@@ -32,10 +32,10 @@ class Document(ItemBase):
         (vi, 'Vietnamese')
     ]
 
-    path = models.CharField(max_length=255, null=True)
-    url = models.URLField(null=True)
+    path = models.CharField(max_length=1000, null=True)
+    url = models.URLField(max_length=1000,null=True,default='')
 
-    name = models.CharField(max_length=255)
+    name = models.CharField(max_length=1000)
     file_type = models.CharField(max_length=4, choices= FILE_TYPE_CHOICES, default=pdf)    
     
     user = models.ForeignKey(User, on_delete=models.CASCADE, null=True, related_name='documents', default=None)

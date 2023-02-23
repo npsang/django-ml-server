@@ -1,0 +1,11 @@
+{
+    "user": "test01",
+    "testFile": [
+        "C:/Users/Sang Nguyen Desktop/Downloads/20Hien_Thang_YdinhNCKHSV_2021_paper.pdf",
+        "C:/Users/Sang Nguyen Desktop/Downloads/Plagiarism_Hewitt_document.pdf"
+        ],
+    "number_of_keyword": 3,
+    "number_of_result": 5,
+    "threshold": 0.8
+}
+
