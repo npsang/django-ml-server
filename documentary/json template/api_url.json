@@ -1,0 +1,25 @@
+{
+    "http://127.0.0.1:8000/api/computes/": 
+    {
+        "user": "npsang2",
+        "threshold": 0.8,
+        "testFile": [
+            "C:/Users/Sang Nguyen Desktop/Downloads/20Hien_Thang_YdinhNCKHSV_2021_paper.pdf",
+            "C:/Users/Sang Nguyen Desktop/Downloads/Plagiarism_Hewitt_document.pdf"
+        ],
+        "templateFile": [
+            "C:/Users/Sang Nguyen Desktop/Downloads/Plagiarism_Hewitt_document.pdf",
+            "C:/Users/Sang Nguyen Desktop/Downloads/avoiding-plagarism.pdf",
+            "C:/Users/Sang Nguyen Desktop/Downloads/2021_Binh_Huong_2021_VCAA.pdf"
+        ]
+    },
+
+    "http://127.0.0.1:8000/api/search_on_internet/":
+    {
+        "user": "test01",
+        "testFile": "C:/Users/Sang Nguyen Desktop/Downloads/20Hien_Thang_YdinhNCKHSV_2021_paper.pdf",
+        "number_of_keyword": 3,
+        "number_of_result": 5
+    }
+    
+}
