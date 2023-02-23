@@ -751,7 +751,7 @@ def __make_res_compute_score(score, cosin_matrix, positisions, template_document
             _res_score.append(
                 {
                             'document_id': template_document_id,
-                            'score': str(round(cosin_matrix[test_sentence_id][pos_in_template].item(), 2)),
+                            'score': str(round(cosin_matrix[test_sentence_id][pos_in_template].item(), 3)),
                             'sentence_id': template_sentences_id[pos_in_template]
                 }
             )
@@ -801,7 +801,7 @@ def __do_test_respone(res, success, document_id, document_name, sentences_id, se
                     {
                         'threshold': 0.8,
                         'id': _id,
-                        'score': str(round(_score.item(), 2)),
+                        'score': str(round(_score.item(), 3)),
                         'type': _type,
                         'quantity': _quantity,
                     } for _id, _score, _quantity, _type in zip(templates_id, templates_score, templates_quantity, compute_type)
