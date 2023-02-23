@@ -19,7 +19,7 @@ from .serializers import (
     SentenceSerializer,
     MLModelSerializer
 )
-
+import numpy as np
 from MLRestAPI.wsgi import registry 
 from file_handle.read_file import read_file
 from search_internet.search_internet import search_downloadPDF
@@ -173,6 +173,8 @@ def _compute_many_with_many(req, pipelines):
     _test_files_path = req['testFile']
     _templates_files_path = req['templateFile']
     _user_name = req['user']
+    threshold = float(req['threshold'])
+
     _res = {'testFile': [], 'templateFile': []}
     # test_files and template_files must be type of list
     _templates_data_to_compute = []
@@ -203,6 +205,7 @@ def _compute_many_with_many(req, pipelines):
     for _test_file_path in _test_files_path:
         _test_success, _test_document_id, _test_document_name, _test_sentences_id, _test_sentences, \
             _test_tokenized_sentences, _test_language, _test_embeddings, _1many_result = None, None, None, None, None, None, None, None, None
+        _templates_id, _templates_score, _templates_quantity, _compute_type = [], [], [], []
         # Prepare test
         _test_success, _test_document_id, _test_document_name, _test_sentences_id, _test_sentences, \
             _test_tokenized_sentences, _test_language, _test_embeddings = __prepare_data(_test_file_path, _user_name, pipelines)
@@ -229,17 +232,24 @@ def _compute_many_with_many(req, pipelines):
             _pipeline = pipelines[_type]
             __test_embedding = next(item for item in _test_embeddings if item['type'] == _type)['embedding']
             __template_embedding = next(item for item in __template_embeddings if item['type'] == _type)['embedding']
+
             _score, _cosin_matrix, _positisions = _pipeline.compute(
                 doc_a=__test_embedding,
                 doc_b=__template_embedding
             )
             _11_result = __make_res_compute_score(_score, _cosin_matrix, _positisions, __template_document_id, __template_sentences_id)
+            
+            _templates_id.append(__template_document_id)
+            _templates_score.append(_score)
+            _templates_quantity.append(len([item for item in _11_result if float(item['score']) > threshold]))
+            _compute_type.append(_type)
             if not _1many_result:
                 _1many_result = [[item] for item in _11_result]
             else:
                 _1many_result = [[*_1many_result[i], item] for i, item in enumerate(_11_result)]
         # make respone
-        __do_test_respone(_res, _test_success, _test_document_id, _test_document_name, _test_sentences_id, _test_sentences, _1many_result)
+        __do_test_respone(_res, _test_success, _test_document_id, _test_document_name, _test_sentences_id, _test_sentences, \
+            _1many_result, _templates_id, _templates_score, _templates_quantity, _compute_type)
 
     return _res
 
@@ -741,7 +751,7 @@ def __make_res_compute_score(score, cosin_matrix, positisions, template_document
             _res_score.append(
                 {
                             'document_id': template_document_id,
-                            'score': cosin_matrix[test_sentence_id][pos_in_template],
+                            'score': str(round(cosin_matrix[test_sentence_id][pos_in_template].item(), 2)),
                             'sentence_id': template_sentences_id[pos_in_template]
                 }
             )
@@ -769,7 +779,8 @@ def __do_template_respone(res, success, document_id, document_name, sentences_id
     except Exception as e:
         print(f'Err: __do_template_respone(). Maybe caused of {e}')
 
-def __do_test_respone(res, success, document_id, document_name, sentences_id, sentences, scores):
+def __do_test_respone(res, success, document_id, document_name, sentences_id, sentences, sentences_score, \
+    templates_id, templates_score, templates_quantity, compute_type):
     if not success:
         return
     try:
@@ -784,7 +795,16 @@ def __do_test_respone(res, success, document_id, document_name, sentences_id, se
                         'content': _content,
                         'matchId': _i,
                         'score': score
-                    } for _i, (_id, _content, score) in enumerate(zip(sentences_id, sentences, scores))
+                    } for _i, (_id, _content, score) in enumerate(zip(sentences_id, sentences, sentences_score))
+                ],
+                'info': [
+                    {
+                        'threshold': 0.8,
+                        'id': _id,
+                        'score': str(round(_score.item(), 2)),
+                        'type': _type,
+                        'quantity': _quantity,
+                    } for _id, _score, _quantity, _type in zip(templates_id, templates_score, templates_quantity, compute_type)
                 ]
             }
         )
@@ -798,7 +818,7 @@ def __prepare_data(path, user_name, pipelines):
     _document, _create = Document.objects.get_or_create(
         path=_path,
         name=_name,
-        user=User.objects.get_or_create(username=user_name)[0].id
+        user=User.objects.get_or_create(username=user_name)[0]
     )
     if _create:
         _success, _sentences_id, _sentences, _tokenized_sentences, _language, _embeddings = \
@@ -820,6 +840,7 @@ def __after_created_new_document_object(document, pipelines):
     # READ DOCUMENT AND DO SENTENCES TOKENIZE
     try:
         _text, _lang = read_file(document.path, get_language=True)
+        print(_lang)
         document.language = _lang
         _sentences_id, _sentences, _sentences_tokenized  = __create_sentence_object_by_processing_document(document, _text, _lang, pipelines)
         _embeddings = []
@@ -833,14 +854,22 @@ def __after_created_new_document_object(document, pipelines):
                     'embedding': _embedding_vi,
                 }
             )
-
-        _embedding_cross = __processand_store_embedding(document,_sentences_tokenized, language='en', pipelines=pipelines)
+        elif _lang == 'en':
+            _embedding_en = __processand_store_embedding(document,_sentences_tokenized, language='en', pipelines=pipelines)
+            _embeddings.append(
+                {
+                    'type': 'en',
+                    'embedding': _embedding_en,
+                }
+            )
+        _embedding_cross = __processand_store_embedding(document,_sentences_tokenized, language='cross', pipelines=pipelines)
         _embeddings.append(
             {
                 'type': 'cross',
                 'embedding': _embedding_cross,
             }
         )
+        print(_embeddings)
         document.save()
         _success = True
     except Exception as e:
@@ -865,6 +894,15 @@ def __get_document_object_data(document):
                 {
                     'type': 'vi',
                     'embedding': _embedding_vi,
+                }
+            )
+        if document.is_en_encode:
+            _en_np_bytes = base64.b64decode(document.en_encode)
+            _embedding_en = pickle.loads(_en_np_bytes)
+            _embeddings.append(
+                {
+                    'type': 'en',
+                    'embedding': _embedding_en,
                 }
             )
 
@@ -931,8 +969,9 @@ def __processand_store_embedding(document, sentences_tokenized, language, pipeli
         document (object): document object
         sentences_tokenized (list): sentences tokenized list of document
         language (str): language of document
-        pipelines (dict): pipelines dict {'vi': VietnameseComputeSimilarity(class),
-                                        'cross': ViEnCrossSimilarity (class)}
+        pipelines (dict): pipelines dict {'vi': VietnameseComputeSimilarity(class instance),
+                                        'en': EnglishComputeSimilarity (class instance)
+                                        'cross': ViEnCrossSimilarity (class instance)}
     return:
         _embedding (numpy array): embedding of document by pipeline
     """
@@ -948,6 +987,16 @@ def __processand_store_embedding(document, sentences_tokenized, language, pipeli
         return _embedding
 
     elif language == 'en':
+        _pipeline = pipelines['en']
+        _embedding = _pipeline.embedding(sentences_tokenized)
+        if _embedding.any():
+            document.is_en_encode = True
+            __np_bytes = pickle.dumps(_embedding)
+            __np_base64 = base64.b64encode(__np_bytes)
+            document.en_encode = __np_base64
+        document.save()
+        return _embedding
+    elif language == 'cross':
         _pipeline = pipelines['cross']
         _embedding = _pipeline.embedding(sentences_tokenized)
         if _embedding.any():
@@ -955,10 +1004,8 @@ def __processand_store_embedding(document, sentences_tokenized, language, pipeli
             __np_bytes = pickle.dumps(_embedding)
             __np_base64 = base64.b64encode(__np_bytes)
             document.cross_encode = __np_base64
-        document.save()
+            document.save()
         return _embedding
     else:
         print(f'__processand_store_embedding: invalid language {language}')
         return None
-
-# def __make_dict()

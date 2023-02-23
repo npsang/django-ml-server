@@ -10,6 +10,7 @@ application = get_wsgi_application()
 from ml.registry import MLRegistry
 from ml.compute_similarity.vien_cross_similarity import ViEnCrossSimilarity
 from ml.compute_similarity.vietnamese_similarity import VietnameseSimilarity
+from ml.compute_similarity.english_similarity import EnglishSimilarity
 from ml.translate.translate import Translate
 try: 
     # create ML registry
@@ -25,6 +26,19 @@ try:
         owner='dev1'
         )
     print(f'Registry VietnameseSimilarity success: {registry.models["vi"]}')
+    
+    #  English Compute Similarity Model
+    en = EnglishSimilarity()
+    registry.add_algorithm(
+        algorithm_name='English Compute Similarity',
+        algorithm_object=en,
+        acronym='en',
+        algorithm_description="Model for compute English document similarity",
+        algorithm_version='0.0.1',
+        owner='dev1'
+        )
+    print(f'Registry EnglishSimilarity success: {registry.models["en"]}')
+
     # Vietnamese English Cross Compute Similarity Model
     cross = ViEnCrossSimilarity()
     registry.add_algorithm(

@@ -45,6 +45,9 @@ class Document(ItemBase):
     is_vi_encode = models.BooleanField(default=False)
     vi_encode = models.BinaryField(editable=True, null=True) #np.array
 
+    is_en_encode = models.BooleanField(default=False)
+    en_encode = models.BinaryField(editable=True, null=True)
+
     is_cross_encode = models.BooleanField(default=False)
     cross_encode = models.BinaryField(editable=True, null=True)
 

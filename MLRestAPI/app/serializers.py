@@ -23,6 +23,7 @@ class ListDocumentSerializer(serializers.ModelSerializer):
         fields = ["id", "path", "url", "name", "file_type",
                 "user", "pre_processing",
                 'language', 'is_vi_encode',
+                'is_en_encode',
                 'is_cross_encode',]
 
 class DocumentSerializer(serializers.ModelSerializer):
@@ -38,6 +39,7 @@ class DocumentSerializer(serializers.ModelSerializer):
         fields = ["id", "path", "url", "name", "file_type",
                 "user", "pre_processing",
                 'language', 'is_vi_encode', 'vi_encode',
+                'is_en_encode', 'en_encode',
                 'is_cross_encode', 'cross_encode', 'sentences']
 
 
