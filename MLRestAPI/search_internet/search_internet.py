@@ -126,7 +126,8 @@ def download_pdf(url):
   
 def search_downloadPDF(sents, langOfText, num_of_keyword=3, num_of_result=10, is_cross=1, timeout=5):      #input list các câu
   downloaded_file_path=[]
-  website_content_file=[]
+  website_content_file_1=[]
+  website_content_file_2=[]
   output=[]
   if is_cross==1:           #xuyên ngữ
     if langOfText=='vi':
@@ -141,7 +142,16 @@ def search_downloadPDF(sents, langOfText, num_of_keyword=3, num_of_result=10, is
         listLinks=search(query,lang='vi',num_results=num_of_result)
         try:
           with concurrent.futures.ThreadPoolExecutor() as executor:
-            website_content_file=executor.map(getContentOnWebsite_save2txt,listLinks,timeout=timeout)
+            website_content_file_1=executor.map(getContentOnWebsite_save2txt,listLinks,timeout=timeout)
+        except Exception as E:
+          print(E)
+      except Exception as E:
+        print(E)
+      try:
+        listLinks=search(translator.translate_vi2en(query),lang='en',num_results=num_of_result)
+        try:
+          with concurrent.futures.ThreadPoolExecutor() as executor:
+            website_content_file_2=executor.map(getContentOnWebsite_save2txt,listLinks,timeout=timeout)
         except Exception as E:
           print(E)
       except Exception as E:
@@ -151,11 +161,10 @@ def search_downloadPDF(sents, langOfText, num_of_keyword=3, num_of_result=10, is
         time.sleep(2)
         listLinks_1_docx = search(query_docx, lang='vi', num_results = num_of_result)
         time.sleep(2)
-        #listLinks_2_pdf = search(translator.translate_vi2en(query_pdf), lang='en', num_results = num_of_result)
+        listLinks_2_pdf = search(translator.translate_vi2en(query_pdf), lang='en', num_results = num_of_result)
         time.sleep(2)
-        #listLinks_2_docx = search(translator.translate_vi2en(query_docx), lang='en', num_results = num_of_result)
-        #listLinks=[*listLinks_1_pdf,*listLinks_1_docx,*listLinks_2_pdf,*listLinks_2_docx]
-        listLinks=[*listLinks_1_pdf,*listLinks_1_docx]
+        listLinks_2_docx = search(translator.translate_vi2en(query_docx), lang='en', num_results = num_of_result)
+        listLinks=[*listLinks_1_pdf,*listLinks_1_docx,*listLinks_2_pdf,*listLinks_2_docx]
         try: 
             with concurrent.futures.ThreadPoolExecutor() as executor:
                 downloaded_file_path=executor.map(download_pdf, listLinks, timeout=timeout)
@@ -177,7 +186,16 @@ def search_downloadPDF(sents, langOfText, num_of_keyword=3, num_of_result=10, is
         listLinks=search(query,lang='vi',num_results=num_of_result)
         try:
           with concurrent.futures.ThreadPoolExecutor() as executor:
-            website_content_file=executor.map(getContentOnWebsite_save2txt,listLinks,timeout=timeout)
+            website_content_file_1=executor.map(getContentOnWebsite_save2txt,listLinks,timeout=timeout)
+        except Exception as E:
+          print(E)
+      except Exception as E:
+        print(E)
+      try:
+        listLinks=search(translator.translate_en2vi(query),lang='vi',num_results=num_of_result)
+        try:
+          with concurrent.futures.ThreadPoolExecutor() as executor:
+            website_content_file_2=executor.map(getContentOnWebsite_save2txt,listLinks,timeout=timeout)
         except Exception as E:
           print(E)
       except Exception as E:
@@ -187,11 +205,10 @@ def search_downloadPDF(sents, langOfText, num_of_keyword=3, num_of_result=10, is
         time.sleep(2)
         listLinks_1_docx = search(query_docx, lang='vi', num_results = num_of_result)
         time.sleep(2)
-        #listLinks_2_pdf = search(translator.translate_en2vi(query_pdf), lang='en', num_results = num_of_result)
+        listLinks_2_pdf = search(translator.translate_en2vi(query_pdf), lang='en', num_results = num_of_result)
         time.sleep(2)
-        #listLinks_2_docx = search(translator.translate_en2vi(query_docx), lang='en', num_results = num_of_result)
-        #listLinks=[*listLinks_1_pdf,*listLinks_1_docx,*listLinks_2_pdf,*listLinks_2_docx]
-        listLinks=[*listLinks_1_pdf,*listLinks_1_docx]
+        listLinks_2_docx = search(translator.translate_en2vi(query_docx), lang='en', num_results = num_of_result)
+        listLinks=[*listLinks_1_pdf,*listLinks_1_docx,*listLinks_2_pdf,*listLinks_2_docx]
         try: 
             with concurrent.futures.ThreadPoolExecutor() as executor:
                 downloaded_file_path=executor.map(download_pdf, listLinks, timeout=timeout)
@@ -223,7 +240,10 @@ def search_downloadPDF(sents, langOfText, num_of_keyword=3, num_of_result=10, is
   for path in downloaded_file_path:
     if path!=None:
       output.append(path)
-  for path in website_content_file:
+  for path in website_content_file_1:
+    if path!=None:
+      output.append(path)
+  for path in website_content_file_2:
     if path!=None:
       output.append(path)
   savepath_output=[]
