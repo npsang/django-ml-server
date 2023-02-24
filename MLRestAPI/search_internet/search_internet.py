@@ -97,14 +97,12 @@ def getContentOnWebsite_save2txt(url):
     try:    
       resp = requests.get(url, headers=headers)
       if resp.status_code == 200:
-        print('ABC')
         soup = BeautifulSoup(resp.text,'lxml')
         text = soup.body.get_text(' ', strip=True)
         #print(text)
     except Exception as E:
         return None
     if text!= '':
-      print('-------------------HERE----------------------')
       #print(text)
       savePath=DOWNLOAD_PATH+(str(url).split('//')[-1]).replace('/','_').replace('.','_').replace('\\','_').replace(':','_').replace('*','_').replace('?','_').replace('<','_').replace('>','_').replace('|','_')+'.txt'
       txt_file=open(savePath,'w',encoding='utf-8')
@@ -161,7 +159,6 @@ def search_downloadPDF(sents, langOfText, num_of_keyword=3, num_of_result=10, is
         try: 
             with concurrent.futures.ThreadPoolExecutor() as executor:
                 downloaded_file_path=executor.map(download_pdf, listLinks, timeout=timeout)
-                print(downloaded_file_path)
         except Exception as E:
             print(E)
             pass

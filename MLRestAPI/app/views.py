@@ -128,7 +128,7 @@ class ComputesViewSet(APIView):
             req=request.data,
             pipelines=registry.models
         )
-        return Response(res)
+        return Response(res, status=status.HTTP_201_CREATED)
 
 class MLModelViewSet(viewsets.ViewSet, generics.ListAPIView, generics.RetrieveAPIView):
     queryset = MLModel.objects.filter(active=True)
@@ -191,12 +191,13 @@ def _compute_many_with_many(req, pipelines):
 
     
     for _test_file_path in _test_files_path:
-        _test_success, _test_document_id, _test_document_name,_test_document_url, _test_sentences_id, _test_sentences, \
-            _test_tokenized_sentences, _test_language, _test_embeddings, _1many_result = None, None, None, None, None, None, None, None, None
+        _test_success, _test_document_id, _test_document_name, _test_document_url, _test_sentences_id, _test_sentences, \
+            _test_tokenized_sentences, _test_language, _test_embeddings, _1many_result = None, None, None, None, None, None, None, None, None, None
         _templates_id, _templates_score, _templates_quantity, _compute_type, _templates_name = [], [], [], [], []
         # Prepare test
-        _test_success, _test_document_id, _test_document_name, _test_document_url, _test_sentences_id, _test_sentences, \
+        _test_success, _test_document_id, _test_document_name,  _test_document_url, _test_sentences_id, _test_sentences, \
             _test_tokenized_sentences, _test_language, _test_embeddings = __prepare_data(_test_file_path, _user_name, pipelines)
+
         if not _test_success:
             print(f'Error when preprare test file: {_test_file_path}')
             continue
@@ -393,6 +394,7 @@ def __do_test_respone(res, success, document_id, document_name, document_url, se
 def __prepare_data(path, user_name, pipelines, url=''):
     _path = path
     _name = _path.split('/')[-1]
+    _document_url = ''
     if not url:
         _document, _create = Document.objects.get_or_create(
             path=_path,
@@ -412,8 +414,9 @@ def __prepare_data(path, user_name, pipelines, url=''):
     else:
         _success, _sentences_id, _sentences, _tokenized_sentences, _language, _embeddings = \
             __get_document_object_data(_document)
-    
-    return _success, _document.id, _document.name, _document.url, _sentences_id, _sentences, _tokenized_sentences, _language, _embeddings
+    if _document.url:
+        _document_url = _document.url
+    return _success, _document.id, _document.name, _document_url, _sentences_id, _sentences, _tokenized_sentences, _language, _embeddings
 
 def __after_created_new_document_object(document, pipelines):
     """
